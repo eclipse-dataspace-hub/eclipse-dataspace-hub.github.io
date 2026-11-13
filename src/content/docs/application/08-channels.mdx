@@ -1,0 +1,94 @@
+---
+title: "Channels"
+description: "A useful pattern, not a standard, that manages catalog, agreement, and transfer for one counterparty and one API as a single object, and the reason why each pair of companies needs two flows."
+---
+
+import Exchange from '../../../components/diagrams/Exchange.astro';
+
+The supplier certificate service can now request a catalog, negotiate a contract, and start a transfer. Lindner Bikes has two hundred suppliers, and Costa Frames has thirty customers. Nobody on the team wants to repeat three steps in every feature, or to learn in production what happens when the second step fails. The team introduces one object that owns all three steps and calls it a channel.
+
+:::note[In this lecture]
+- What a channel is, and that it is a pattern and not a standard.
+- The life of a channel, from opening to stale.
+- What to do when the outcome of a step is unknown.
+- Why each pair of companies needs two flows.
+:::
+
+## One object for three steps
+
+A **channel** is the application's record of its connection to one counterparty for one API. There is at most one channel per combination of own participant context, counterparty DID, API identifier, and version.
+
+A channel stores the counterparty's DID and DSP address, the API identifier and version, the dataset and the offer found in the catalog, the agreement ID, the transfer process ID, and a state.
+
+A feature that wants to call Costa asks for the channel and receives a flow ID, or the answer that the channel is not ready.
+
+A channel is a pattern, not a standard. The Dataspace Protocol and the connector know catalogs, agreements, and transfer processes, and leave it to each application how it keeps them together. It pays off where an application talks to the same counterparties about the same API again and again. For a single download it is not needed.
+
+Behind a channel there is often a data sharing agreement. The offer that the channel is opened for can require that the counterparty signed the agreement of the use case, and the counterparty proves that with the credentials the offer asks for. The connector checks them when the channel opens and again each time its transfer is renewed. A ready channel therefore also means that the counterparty has shown what the offer requires.
+
+## The life of a channel
+
+| State | Meaning | What happens next |
+|---|---|---|
+| `opening` | Catalog request, negotiation, or transfer is in progress | The channel advances when the connector reports progress |
+| `ready` | The transfer is `STARTED` | Callers use the flow |
+| `stale` | The transfer was terminated or suspended | A new transfer is started under the same agreement |
+| `failed` | No matching offer, or the negotiation was terminated | The reason is shown. A later trigger tries again. |
+| `blocked` | The outcome of a step is unknown | Nothing, until the outcome is resolved |
+
+Three rules keep channels healthy.
+
+1. **Open in the background.** Opening takes seconds, and longer when the provider holds the request for approval. A caller that finds no ready channel is told so and comes back.
+2. **Reuse.** A ready channel serves every call to that counterparty and API. Correct the stored state when a call fails or an event arrives.
+3. **Replace and renew.** When the transfer ends, start a new one under the existing agreement, and negotiate again only if the agreement no longer works. Replace a flow that is older than the limit of your dataspace, one day in the Bike Dataspace. Lecture 13 explains why.
+
+## When the outcome is unknown
+
+Suppose the contract request to your connector times out. You do not know whether a negotiation started. If you send the request again and the first one did arrive, the two companies hold two agreements and two flows.
+
+Set the channel to `blocked` and find out what exists. The Management API can list the negotiations and the transfer processes of your participant context, so a background job can look for the one that belongs to this counterparty and API. If it finds one, the channel adopts it. If it finds none after a waiting time, the job or a person releases the channel.
+
+## Two flows per pair
+
+A pull flow has a direction. The token is issued to the consumer of the offer, and it lets that side call the other. Nothing in the flow lets the provider call back.
+
+A use case often needs both directions. Costa answers some requests hours later, and it wants to tell Lindner when a renewed certificate is available. The answer is a second API in the opposite direction.
+
+- The **provider API** is offered by the company that provides certificates. Customers call it to request and fetch them.
+- The **consumer API** is offered by the company that consumes certificates. Suppliers call it to deliver answers and notices.
+
+Costa opens a channel to Lindner's consumer API as Lindner opened one to Costa's provider API.
+
+<Exchange
+  left={{ title: 'Costa Frames', role: 'Provides certificates' }}
+  right={{ title: 'Lindner Bikes', role: 'Consumes certificates' }}
+  rows={[
+    {
+      left: { title: 'Provider API', text: 'offered by Costa' },
+      right: { title: 'Channel', text: "Lindner's agreement and flow" },
+      link: { label: 'requests, retrieval, feedback', direction: 'left' },
+    },
+    {
+      left: { title: 'Channel', text: "Costa's agreement and flow" },
+      right: { title: 'Consumer API', text: 'offered by Lindner' },
+      link: { label: 'answers, notices', direction: 'right' },
+    },
+  ]}
+  caption="Two flows between one pair of companies. Each side calls only over the flow it holds as consumer of an offer."
+/>
+
+This is why lecture 4 published two assets per member. When both companies provide and consume certificates, four flows connect them.
+
+## Key takeaways
+
+- A channel is a pattern of the application, not a standard. It stores the catalog result, the agreement, and the flow for one counterparty and one API.
+- A channel often rests on a data sharing agreement, which the counterparty proves with its credentials whenever the channel opens or is renewed.
+- Channels open in the background, are reused while ready, and are replaced when their transfer ends.
+- An unknown outcome blocks a channel until it is resolved. Repeating a step blindly creates duplicate agreements and tokens.
+- A pull flow serves one direction. A use case with answers and notices needs a second API and a second flow.
+
+## Go deeper
+
+- [EDC documentation: Control plane](https://eclipse-edc.github.io/documentation/for-adopters/control-plane/) explains why negotiations and transfers must be handled asynchronously, and how transfers without a defined end stay open.
+- [Data Plane Signaling specification](https://eclipse-dataplane-signaling.github.io/dataplane-signaling) defines pull and push transfers and the direction of a data flow.
+- [Design the use-case protocol](../11-design-the-use-case-protocol/) defines what the provider API and the consumer API carry.

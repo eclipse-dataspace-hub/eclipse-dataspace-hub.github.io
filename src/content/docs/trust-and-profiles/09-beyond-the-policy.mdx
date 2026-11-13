@@ -1,0 +1,84 @@
+---
+title: "Beyond the policy"
+description: "What is still open once a company has a contract, who decides it, and what the dataspace has to settle so that each participant can decide on verified facts."
+---
+
+import Flow from '../../../components/diagrams/Flow.astro';
+
+At the end of the last lecture Lindner Bikes had a contract with Costa Frames. The association had verified the facts, Costa's condition was met, and the agreement was signed. One question was not answered by any of that: which of Costa's certificates does Lindner get? The working group has to decide how much of this question belongs to the dataspace.
+
+:::note[In this lecture]
+- What a contract settles, and what it leaves open.
+- What each participant decides for itself.
+- What the dataspace still has to settle for those decisions.
+- What can be shown afterwards.
+:::
+
+## What a contract leaves open
+
+The first lecture sorted trust into three layers. The lectures since then have filled two of them.
+
+| Layer | Question | Settled by | Covered in |
+|---|---|---|---|
+| Facts | What has been verified about this company? | Credentials from the association | Lectures 4, 5, and 7 |
+| Rules | May this company take part in this use case? | The conditions on an offer, and the signed agreement | Lectures 6 and 8 |
+| Decisions | Does it get this item, now? | The participant that owns the data | This lecture |
+
+A contract answers the second question, once, for everything that is shared under the use case. It does not answer the third, and it should not.
+
+- **Single items.** Costa has dozens of certificates and Brandt hundreds of battery models. A condition for each would turn one contract into hundreds and would show every member what a company holds.
+- **Business relations.** Which customers Costa supplies changes from week to week. Conditions that list them would have to be published again each time.
+- **Judgment.** "Release audit reports only after someone has looked at the request" is a process, not a fact about the requester.
+
+## What each participant decides
+
+These decisions stay with the company that owns the data, and its application carries them out. Costa keeps a list of the customers it works with, and a member that is not on it gets a polite refusal. Costa also decides which certificate each customer may have, as Brandt decides which battery records a recycler receives. Some requests are answered at once, and others wait for a person.
+
+None of this involves anyone outside the company. Costa adds a customer on Monday, and its certificates reach that customer on Monday. No offer, no credential, and no part of the profile changes.
+
+## What the dataspace still settles
+
+A company can decide well only if it knows whom it is dealing with. The dataspace therefore settles how verified facts reach the place where the decision is made.
+
+<Flow
+  steps={[
+    { actor: 'Bike Industry Association', text: "checks Hansen's permit and attests the activity dismantling" },
+    { actor: "Brandt's connector", text: 'admits Hansen to the battery use case as a recycler' },
+    { actor: "Brandt's battery data service", text: "is told Hansen's verified activity and releases the dismantling instructions" },
+    { actor: 'Hansen Recycling', text: 'cannot state its own activities', apart: true },
+  ]}
+  caption="From a verified fact to a single decision. Brandt's application decides, on a fact that the association verified and that Hansen cannot change."
+/>
+
+The profile names the facts that an application is told about a requester. In the Bike Dataspace these are who the requester is and, for a recycler, its attested activities. Only these facts count. An application does not ask for credentials a second time, and it never relies on what a requester says about itself.
+
+The facts also have to stay fresh. What an application is told dates from the start of a transfer, so the rule from [lecture 7](../07-credential-lifecycle/) applies here as well: no transfer runs longer than a day, and a changed or withdrawn credential takes effect within a day.
+
+One more point belongs to the use-case owner. A refusal is a normal answer, and the description of a use case says how it is reported, so that the other side can tell "not for you" from an error.
+
+## What can be shown afterwards
+
+A decision that a company makes for itself still has to stand up later. Four records answer what a dispute asks, and each has an owner from an earlier lecture.
+
+| Question | Record | Kept by |
+|---|---|---|
+| Why was this fact attested? | The application and the review | The association |
+| What did the company agree to? | The signed agreement with its version | The association |
+| On which conditions did the two connect? | The contract | Both companies |
+| What was requested, released, or refused? | The log of the application | Each company |
+
+The last record is the only one that the dataspace cannot produce for a participant. A data sharing agreement can require it.
+
+## Key takeaways
+
+- A contract admits a company to a use case. Which item it gets is decided by the participant that owns the data.
+- Partners, items, and approvals change without touching an offer, a credential, or the profile.
+- The dataspace settles which verified facts an application is told, that only those count, and how long they may be relied on.
+- The association's records, the contract, and each company's own log together show afterwards what happened and why.
+
+## Go deeper
+
+- [EDC documentation: Policy engine](https://eclipse-edc.github.io/documentation/for-adopters/control-plane/policy-engine/) describes what a connector checks and when.
+- [EDC documentation: Contract negotiation approval](https://eclipse-edc.github.io/documentation/for-adopters/control-plane/policy-engine/negotiation-approval/) describes how a connector can hold a request until a person decides.
+- [Build a Dataspace Application: Calls and decisions in the application](../../application/12-calls-and-decisions/) shows partner lists, releases per item, and approval rules in software.
+- [Build a Dataspace Application: Flow tokens](../../application/10-flow-tokens/) shows how verified facts technically reach an application.

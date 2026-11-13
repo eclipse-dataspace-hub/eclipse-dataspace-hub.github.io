@@ -1,0 +1,90 @@
+---
+title: "How a dataspace works"
+description: "The basic pattern of every dataspace exchange and the building blocks behind it: connector, Credential Service, data plane, and three open protocols."
+---
+
+import Exchange from '../../../components/diagrams/Exchange.astro';
+
+Every exchange in a dataspace follows the same pattern, whatever the data is. This lecture gives the pattern and names the building blocks. The following lectures go through each step with the companies from the story.
+
+:::note[In this lecture]
+- The five steps from joining to receiving data.
+- The building blocks every participant needs.
+- The three open protocols that make participants interoperable.
+:::
+
+## The pattern
+
+1. **Join.** A company is admitted to the dataspace and receives a digital identity and its first credential, usually proof of membership.
+2. **Publish.** A provider describes what it offers and states the conditions for access.
+3. **Discover.** A consumer asks a provider what it offers and sees the offers it is eligible for.
+4. **Agree.** Consumer and provider negotiate a contract for one offer. Software on both sides checks the conditions.
+5. **Transfer.** The data moves from provider to consumer under that contract.
+
+Steps 2 to 5 happen directly between the two companies. Nothing passes through the association or through a central database.
+
+## The building blocks
+
+Each participant needs four capabilities. In the Eclipse ecosystem each one has a matching component.
+
+| Capability | What it does | Eclipse component |
+|---|---|---|
+| **Connector** | Publishes offers, answers catalog requests, negotiates contracts, and coordinates transfers. It is the participant's control plane: it handles agreements about data and never the data itself. | EDC Connector |
+| **Credential Service** | Holds the participant's identity keys and credentials and presents them when another participant asks for proof. | EDC Identity Hub |
+| **Data plane** | Serves or moves the actual data once a contract exists. | Any data plane that implements Data Plane Signaling |
+| **Business systems** | The systems where the data lives and where it is needed: a document store, an ERP, a supplier management tool. | Yours |
+
+The split between control plane and data plane is central. Agreements are standardized and look the same for every kind of data. The data itself can be a PDF, an API, or a stream, and each kind may need a different data plane. Separating the two lets one connector work with many kinds of data.
+
+The governance authority needs one more component:
+
+| Capability | What it does | Eclipse component |
+|---|---|---|
+| **Issuer** | Issues credentials, such as proof of membership, to participants. | EDC Identity Hub (its Issuer Service) |
+
+A platform operator additionally needs a way to create and manage these components for many participants. That is the job of the Connector Fabric Manager, which the platform path covers.
+
+<Exchange
+  left={{ title: 'Costa Frames', role: 'Provider' }}
+  right={{ title: 'Lindner Bikes', role: 'Consumer' }}
+  rows={[
+    { left: 'Connector', right: 'Connector', link: { label: 'offers, contracts', direction: 'both' } },
+    { left: 'Credential Service', right: 'Credential Service', link: { label: 'proofs', direction: 'both' } },
+    { left: 'Data plane', right: 'Data plane', link: { label: 'data', direction: 'right' } },
+    { left: 'Document store', right: 'Supplier management' },
+  ]}
+  caption="Both participants have the same building blocks. Each block talks to its counterpart on the other side."
+/>
+
+## The protocols
+
+Participants can use different software and still work together because they follow the same open specifications. Three matter here.
+
+- The **Dataspace Protocol (DSP)** defines how connectors talk to each other: how to ask for a catalog, negotiate a contract, and start a transfer.
+- The **Decentralized Claims Protocol (DCP)** defines how participants prove things about themselves: how a Credential Service presents credentials and how an issuer delivers them.
+- **Data Plane Signaling (DPS)** defines how a connector instructs a data plane. It lets any compliant data plane work with any compliant connector.
+
+All three are developed as open specifications at the Eclipse Foundation. The Eclipse Dataspace Components implement them, and other implementations exist.
+
+## What is not there
+
+Notice what the pattern does not need:
+
+- There is no central store for the data. Certificates stay in Costa's systems until Lindner fetches them.
+- No central party sees who requested what. An exchange involves only the two companies.
+- There is no shared user directory. Each participant proves its identity itself, with credentials from an issuer that the others trust.
+
+A dataspace can add shared services, such as a directory of members or a combined catalog. They are a convenience. The basic pattern works without them.
+
+## Key takeaways
+
+- Every exchange follows the same steps: join, publish, discover, agree, transfer.
+- A participant needs a connector, a Credential Service, a data plane, and its own business systems.
+- The connector handles agreements. The data plane handles data.
+- DSP, DCP, and DPS are open specifications, so participants are not tied to one product.
+
+## Go deeper
+
+- [IDSA Rulebook: Planes](https://kb.internationaldataspaces.org/external/rulebook/010_Planes/) explains the control plane and data plane split.
+- [EDC documentation: Dataspaces](https://eclipse-edc.github.io/documentation/for-adopters/dataspaces/) introduces DSP, DCP, and identity from the EDC point of view.
+- [Documentation and source repositories](../../#documentation-and-source-repositories) on the overview page links to the specifications and projects.

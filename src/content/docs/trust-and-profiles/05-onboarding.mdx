@@ -1,0 +1,85 @@
+---
+title: "Onboarding"
+description: "Onboarding from the governance side: what an application contains, what a review attests, and how approval leads to a credential."
+---
+
+import Sequence from '../../../components/diagrams/Sequence.astro';
+
+Costa Frames wants to join. In the use-case path this took two short steps: the association admitted Costa, and Danube Cloud set it up. The working group now has to define what happens inside those steps, who is responsible for each part, and what is on record afterwards.
+
+:::note[In this lecture]
+- What an application contains and what a review produces.
+- The order of approval, setup, and issuance.
+- Who owns each step, and what is on record afterwards.
+:::
+
+## The application
+
+Costa does not deal with the association directly. Danube Cloud offers onboarding as part of its service: Costa fills in the application in Danube Cloud's portal, and the portal submits it to the onboarding API of the association. This is a common setup. A company that runs its own software, such as Brandt, applies through a portal of the association or of another provider. Either way an application has four parts.
+
+- **Company details** and a contact person.
+- **The identifier** that Costa will use in the dataspace. For a hosted member the platform proposes it. It does not have to work yet. It has to work when Costa's Credential Service asks for its credentials.
+- **Signed agreements.** The participation terms, and the data sharing agreement of each use case that Costa wants to take part in. For each, Costa submits a copy signed by an authorized person, and the application records the version, the signer, and the date. [Lecture 8](../08-use-cases-and-agreements/) covers these agreements.
+- **Requested attributes** with evidence. Hansen Recycling requests the activities `dismantling` and `material-recovery` and uploads its waste treatment permit.
+
+## Requested is not attested
+
+A reviewer at the association checks that Costa is a real company in the bicycle industry and that an authorized person accepted the terms. Then the reviewer approves or rejects, with a reason that is kept.
+
+For attributes the reviewer **attests** what the evidence supports. Hansen's permit covers dismantling and says nothing about material recovery. The reviewer attests `dismantling`. The record keeps both lists, the requested one and the attested one. The agreements that an applicant accepted are attested from the signed copies and go into the membership credential.
+
+What an applicant says about itself is a request. Only attested values get near a credential.
+
+## From approval to active membership
+
+1. The association's onboarding application registers Costa at the Issuer Service, with Costa's identifier and the attested values. Until then the issuer refuses a credential request from that identifier.
+2. Danube Cloud's portal reads the approval from the onboarding API, and the platform sets up Costa's services: its identity, its Credential Service, and its connector.
+3. Costa's Credential Service requests the membership credential.
+4. The Issuer Service looks up what is registered for Costa, signs the credential, and delivers it.
+5. The membership is active when the credential is in Costa's Credential Service.
+
+<Sequence
+  actors={{ a: 'Association', i: 'Issuer Service', c: 'Costa Credential Service', d: 'Danube Cloud' }}
+  steps={[
+    { from: 'a', to: 'i', label: 'Registers Costa with attested values' },
+    { from: 'd', to: 'c', label: "Sets up Costa's services" },
+    { from: 'c', to: 'i', label: 'Requests the membership credential' },
+    { from: 'i', to: 'c', label: 'Signed credential' },
+    { at: 'c', label: 'Membership is active' },
+  ]}
+  caption="The five steps from approval to active membership. Admission ends with a registration at the issuer. Issuance starts from the member's own Credential Service."
+/>
+
+The holder always starts issuance. The association does not push a credential into anyone's Credential Service, and the Issuer Service keeps no copy of the signed credential.
+
+## Who does what, and what is on record
+
+Each step has one owner and leaves a record.
+
+| Step | Owner | On record afterwards |
+|---|---|---|
+| Application | The applicant, through Danube Cloud's portal or another onboarding service | Company details, the identifier, the signed agreements, and the requested attributes with their evidence |
+| Review | Reviewers of the association | The decision with its reason, and the attested values next to the requested ones |
+| Registration at the issuer | The association's onboarding application | The member's identifier and attested values at the Issuer Service |
+| Setup | Danube Cloud, or a member that runs its own software | The member's identity, Credential Service, and connector |
+| Issuance | The member's Credential Service and the Issuer Service | The credentials in the member's Credential Service, and the issuer's entry for each, which a later revocation needs |
+
+The platform sets up services. It sees no evidence, attests nothing, and its provisioning requests no credentials. A member with its own software, such as Brandt, goes the same way and does the setup itself.
+
+The association fixes the terms of the process: which evidence each fact needs, who may review, how long a review may take, how an applicant can appeal, and how long the records are kept.
+
+A dataspace without a membership credential has no admission step. Every credential that it relies on still goes the same way: evidence, review, registration at an issuer, and a request from the holder.
+
+## Key takeaways
+
+- A review attests what the evidence supports. Requested and attested values are recorded separately.
+- Admission ends with a registration at the issuer. The member's Credential Service then requests its credentials itself.
+- The platform sets up a member's services. It attests nothing, and its provisioning requests no credentials.
+- Every step has one owner and leaves a record.
+
+## Go deeper
+
+- [IDSA Rulebook: Onboarding pattern for decentralized dataspaces](https://kb.internationaldataspaces.org/external/rulebook/140_Decentralized_Patterns_Onboarding/) describes onboarding with an onboarding service and a credential issuer.
+- [EDC Identity Hub: Credential issuance concepts](https://github.com/eclipse-edc/IdentityHub/blob/main/docs/developer/architecture/issuer/issuance/issuance.process.md) explains why onboarding and issuance are decoupled.
+- [A Dataspace Use Case: Joining the dataspace](../../use-case/04-joining-the-dataspace/) tells these steps as a story.
+- [Set Up a Dataspace Platform: Provision a participant](../../platform-setup/09-provision-a-participant/) shows what the platform does during setup.

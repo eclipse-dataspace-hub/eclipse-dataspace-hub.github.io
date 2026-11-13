@@ -1,0 +1,141 @@
+---
+/**
+ * A state machine: the normal path as a row of states, and the transitions
+ * that leave it listed below.
+ *
+ *   <StateFlow
+ *     states={['REQUESTED', 'AGREED', 'VERIFIED', 'FINALIZED']}
+ *     transitions={[{ from: ['REQUESTED', 'AGREED', 'VERIFIED'], to: 'TERMINATED' }]}
+ *     finals={['FINALIZED', 'TERMINATED']}
+ *     caption="…"
+ *   />
+ *
+ * `from` takes state names or a phrase such as "any state". States listed in
+ * `finals` are drawn as end states.
+ */
+interface Transition {
+  from: string | string[];
+  to: string;
+  /** The transition also runs back from `to` to `from`. */
+  both?: boolean;
+}
+
+interface Props {
+  states: string[];
+  transitions?: Transition[];
+  finals?: string[];
+  caption?: string;
+}
+
+const { states, transitions = [], finals = [], caption } = Astro.props;
+const known = new Set([...states, ...transitions.map((transition) => transition.to)]);
+const list = (value: string | string[]) => (Array.isArray(value) ? value : [value]);
+---
+
+<figure class="hub-figure not-content state-flow">
+  <ol class="path" role="list">
+    {
+      states.map((state, index) => (
+        <li>
+          {index > 0 && <span class="hub-arrow" aria-hidden="true" />}
+          <code class:list={['state', { final: finals.includes(state) }]}>{state}</code>
+        </li>
+      ))
+    }
+  </ol>
+  {
+    transitions.length > 0 && (
+      <ul class="side" role="list">
+        {transitions.map((transition) => (
+          <li>
+            <span class="from">
+              {list(transition.from).map((state) =>
+                known.has(state) ? <code class="state">{state}</code> : <span class="phrase">{state}</span>
+              )}
+            </span>
+            <span class:list={['hub-arrow', { 'hub-arrow--both': transition.both }]} aria-hidden="true" />
+            <code class:list={['state', { final: finals.includes(transition.to) }]}>{transition.to}</code>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .path,
+  .side {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .path {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 0.6rem;
+  }
+
+  .path li {
+    display: flex;
+    align-items: center;
+  }
+
+  .path .hub-arrow {
+    width: 1.6rem;
+    margin-inline: 0.45rem;
+  }
+
+  .state {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--sl-color-gray-4);
+    border-radius: 999px;
+    color: var(--sl-color-white);
+    font-family: var(--__sl-font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    background: var(--sl-color-bg);
+  }
+
+  .state.final {
+    border-color: var(--sl-color-accent);
+    box-shadow: 0 0 0 2px var(--sl-color-bg-nav), 0 0 0 3px var(--sl-color-accent);
+  }
+
+  .side {
+    display: grid;
+    gap: 0.6rem;
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+    border-top: 1px dashed var(--sl-color-gray-4);
+  }
+
+  .side li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.6rem;
+  }
+
+  .from {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .phrase {
+    color: var(--sl-color-gray-2);
+    font-size: 0.78rem;
+  }
+
+  .side .hub-arrow {
+    width: 1.8rem;
+    flex: none;
+  }
+</style>

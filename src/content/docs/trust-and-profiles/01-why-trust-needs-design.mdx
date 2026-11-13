@@ -1,0 +1,95 @@
+---
+title: "Why trust needs design"
+description: "What members must be able to rely on before they share data, what goes wrong when nobody designs it, and the three layers of facts, rules, and decisions."
+---
+
+import Chain from '../../../components/diagrams/Chain.astro';
+
+The Bike Industry Association has decided to found a dataspace for supplier certificates. Danube Cloud can install the software in a day. The working group that the association set up soon finds that its open questions are of a different kind. None of them is answered by installing anything.
+
+:::note[In this lecture]
+- What members need to be sure of before they share data.
+- What goes wrong when trust is left to each participant.
+- The three layers this path uses: facts, rules, and decisions.
+:::
+
+## What members need to be sure of
+
+Costa Frames is about to let another company's software fetch its certificates without a phone call. It will do that only if four questions have reliable answers.
+
+| Question | In the Bike Dataspace |
+|---|---|
+| Who is the counterparty? | A company with an identifier that it controls and that others can check. |
+| What has been verified about it, and by whom? | The association confirmed that it is a member. For a recycler, the association also checked the waste treatment permit. |
+| Which rules apply to this exchange? | The conditions on the offer, written in terms that mean the same to both sides. |
+| What happens when something changes? | Credentials expire or are withdrawn, and every provider notices without being told. |
+
+Trust in a dataspace means that these answers do not depend on whom you happen to know. They come from an authority that all members accept, in a form that software can check.
+
+## What goes wrong without design
+
+A group that skips the design work still gets answers to the four questions. It gets a different answer from every participant.
+
+- **Every provider invents its own terms.** Costa's offer requires a "member". Brandt's requires an "association partner". Lindner's connector cannot satisfy a condition it does not understand, so each new provider becomes a new integration.
+- **Credentials are used as permissions.** Somebody proposes a credential that says "may read battery data". Now the association decides about Brandt's data.
+- **Policies ask for facts nobody verified.** A provider requires an information security certification. No issuer in the dataspace attests it, so nobody can ever prove it, and the offer is dead.
+- **Rules live in one platform's code.** Danube Cloud implements the membership check in its own way. Brandt, which runs its own software, cannot reproduce it.
+
+Each failure has the same cause. A decision that belongs to the whole dataspace was made locally, or not at all.
+
+## Three layers
+
+The working group sorts every rule it discusses into one of three layers.
+
+**Facts.** A credential states what an authority verified about a participant. Example: Hansen Recycling holds a waste treatment permit that covers dismantling. The association checks the permit once and signs the statement.
+
+**Rules.** A policy term turns a fact into a condition that every connector evaluates the same way. Example: the counterparty is a recycler. Brandt puts this term on its offer for dismantling data, and Brandt's connector checks it against Hansen's credential.
+
+**Decisions.** An application decides the individual case with the verified facts in hand. Example: Hansen receives the dismantling instructions for the battery models it takes back. Brandt's battery data service decides that for each request.
+
+<Chain
+  rows={[
+    {
+      nodes: [
+        { title: 'Facts', text: 'credentials from the association' },
+        { title: 'Rules', text: 'policy terms in every connector' },
+        { title: 'Decisions', text: 'applications of each member' },
+      ],
+      links: ['are tested by', 'admit a caller to'],
+    },
+  ]}
+  caption="Facts are verified once. Rules are checked on every request. Decisions are made case by case by the participant that owns the data."
+/>
+
+The layers have different owners. The association owns the facts. The dataspace owns the vocabulary of rules, and each provider chooses which rules to put on an offer. Each participant owns its decisions.
+
+Most design mistakes put something into the wrong layer: a permission written into a credential, or a list of customers written into a policy.
+
+The first two layers, and what the third needs from them, are written down in the **dataspace profile**.
+
+## The decisions ahead
+
+The rest of this path takes the working group's questions in order.
+
+1. Who decides, who attests, who signs, and who runs the software? ([lecture 2](../02-roles-and-responsibilities/))
+2. What does the technical rulebook fix? ([lecture 3](../03-the-dataspace-profile/))
+3. Which credentials exist, and what do they state? ([lecture 4](../04-design-the-credentials/))
+4. How does a company become a member? ([lecture 5](../05-onboarding/))
+5. Which conditions can providers use? ([lecture 6](../06-policy-vocabulary/))
+6. What happens when a fact changes? ([lecture 7](../07-credential-lifecycle/))
+7. How is a use case defined and governed? ([lecture 8](../08-use-cases-and-agreements/))
+8. What is left to applications? ([lecture 9](../09-beyond-the-policy/))
+9. Where do you start, and how does the design grow? ([lecture 10](../10-from-pilot-to-scale/))
+
+## Key takeaways
+
+- Members share data when identity, verified facts, rules, and the handling of change are reliable for every counterparty.
+- Left to each participant, these turn into private vocabularies, credentials used as permissions, and rules tied to one platform.
+- Design trust in three layers: facts in credentials, rules in policy terms, and decisions in applications.
+- Each layer has a different owner. Putting a decision into the wrong layer is the most common mistake.
+
+## Go deeper
+
+- [IDSA Rulebook: Trust](https://kb.internationaldataspaces.org/external/rulebook/008_Trust/) defines trust as a time-bound, purpose-specific assessment that each participant makes from evidence, claims, and policies.
+- [IDSA Rulebook: Establishing trust](https://kb.internationaldataspaces.org/external/rulebook/103_Establishing_Trust/) describes attribute-based trust: attributes of a participant matched against policies.
+- [IDSA Rulebook: Dataspace trust frameworks](https://kb.internationaldataspaces.org/external/rulebook/009_Dataspace_Trust_Frameworks/) defines claims, policies, and how the two are reconciled.

@@ -1,0 +1,182 @@
+---
+/**
+ * Two parties side by side, with what passes between them at each level.
+ *
+ *   <Exchange
+ *     left={{ title: 'Costa Frames', role: 'Provider' }}
+ *     right={{ title: 'Lindner Bikes', role: 'Consumer' }}
+ *     rows={[
+ *       { left: 'Connector', right: 'Connector', link: { label: 'offers, contracts', direction: 'both' } },
+ *       { left: 'Data plane', right: 'Data plane', link: { label: 'data', direction: 'right' } },
+ *       { left: 'Document store', right: 'Supplier management' },
+ *     ]}
+ *     caption="…"
+ *   />
+ *
+ * A row without `link` shows two boxes that do not talk to each other.
+ */
+type Box = string | { title: string; text?: string };
+
+interface Party {
+  title: string;
+  role?: string;
+}
+
+interface Row {
+  left: Box;
+  right: Box;
+  link?: { label: string; direction?: 'both' | 'right' | 'left' };
+}
+
+interface Props {
+  left: Party;
+  right: Party;
+  rows: Row[];
+  caption?: string;
+}
+
+const { left, right, rows, caption } = Astro.props;
+const box = (value: Box) => (typeof value === 'string' ? { title: value } : value);
+---
+
+<figure class="hub-figure not-content exchange">
+  <div class="grid" style={`--rows: ${rows.length}`}>
+    <div class="party party--left" aria-hidden="true"></div>
+    <div class="party party--right" aria-hidden="true"></div>
+
+    <p class="heading heading--left">
+      <strong>{left.title}</strong>
+      {left.role && <span>{left.role}</span>}
+    </p>
+    <p class="heading heading--right">
+      <strong>{right.title}</strong>
+      {right.role && <span>{right.role}</span>}
+    </p>
+
+    {
+      rows.map((row, index) => {
+        const a = box(row.left);
+        const b = box(row.right);
+        const line = `grid-row: ${index + 2}`;
+        return (
+          <>
+            <div class="hub-node cell cell--left" style={line}>
+              <strong>{a.title}</strong>
+              {a.text && <span>{a.text}</span>}
+            </div>
+            <div class="link" style={line}>
+              {row.link && (
+                <>
+                  <span class="link-label">{row.link.label}</span>
+                  <span
+                    class:list={[
+                      'hub-arrow',
+                      {
+                        'hub-arrow--both': (row.link.direction ?? 'both') === 'both',
+                        'hub-arrow--back': row.link.direction === 'left',
+                      },
+                    ]}
+                    aria-hidden="true"
+                  />
+                </>
+              )}
+            </div>
+            <div class="hub-node cell cell--right" style={line}>
+              <strong>{b.title}</strong>
+              {b.text && <span>{b.text}</span>}
+            </div>
+          </>
+        );
+      })
+    }
+  </div>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 0.7fr) minmax(0, 1fr);
+    /* The last track is padding below the boxes, inside the party panels. */
+    grid-template-rows: auto repeat(var(--rows), auto) 0.1rem;
+    gap: 0.5rem 0;
+  }
+
+  /* Background panels that group each party's boxes. */
+  .party {
+    grid-row: 1 / -1;
+    margin: -0.1rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.45rem;
+    background: color-mix(in srgb, var(--sl-color-bg) 60%, transparent);
+  }
+
+  .party--left {
+    grid-column: 1;
+  }
+
+  .party--right {
+    grid-column: 3;
+  }
+
+  .heading {
+    grid-row: 1;
+    display: grid;
+    gap: 0.1rem;
+    margin: 0;
+    padding: 0.6rem 0.7rem 0.15rem;
+    text-align: center;
+  }
+
+  .heading--left {
+    grid-column: 1;
+  }
+
+  .heading--right {
+    grid-column: 3;
+  }
+
+  .heading strong {
+    color: var(--sl-color-white);
+    font-size: 0.86rem;
+    line-height: 1.25;
+  }
+
+  .heading span {
+    color: var(--sl-color-gray-3);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.25;
+    text-transform: uppercase;
+  }
+
+  .cell {
+    margin-inline: 0.5rem;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .cell--left {
+    grid-column: 1;
+  }
+
+  .cell--right {
+    grid-column: 3;
+  }
+
+  .link {
+    grid-column: 2;
+    display: grid;
+    align-content: center;
+    gap: 0.3rem;
+    padding-inline: 0.15rem;
+  }
+
+  .link-label {
+    color: var(--sl-color-gray-2);
+    font-size: 0.72rem;
+    line-height: 1.3;
+    text-align: center;
+  }
+</style>

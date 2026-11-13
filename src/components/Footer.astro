@@ -1,0 +1,39 @@
+---
+/**
+ * Extends the default Starlight footer with the project notice. Its links
+ * leave the site and open in a new tab.
+ */
+import Default from '@astrojs/starlight/components/Footer.astro';
+---
+
+<Default><slot /></Default>
+
+<div class="project-notice not-content">
+  <p>
+    An <a href="https://www.eclipse.org/" target="_blank" rel="noopener noreferrer">Eclipse Foundation<span class="sr-only"> (opens in a new tab)</span></a> project · Incubating · Licensed under the
+    <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer">Apache License 2.0<span class="sr-only"> (opens in a new tab)</span></a>
+  </p>
+</div>
+
+<style>
+  .project-notice {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--sl-color-hairline);
+    color: var(--sl-color-gray-3);
+    font-size: var(--sl-text-xs);
+    line-height: 1.6;
+  }
+
+  .project-notice p {
+    margin: 0;
+  }
+
+  .project-notice a {
+    color: var(--sl-color-gray-2);
+  }
+
+  .project-notice a:hover {
+    color: var(--sl-color-text-accent);
+  }
+</style>

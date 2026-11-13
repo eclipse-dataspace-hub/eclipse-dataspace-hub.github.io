@@ -1,0 +1,166 @@
+---
+title: "Discover and negotiate"
+description: "The requests an application sends to find a counterparty's API offer and conclude a contract: catalog request, dataset selection, contract request, and the states of a negotiation."
+---
+
+import StateFlow from '../../../components/diagrams/StateFlow.astro';
+
+A buyer at Lindner Bikes adds Costa Frames as a supplier in the supplier certificate service. Before the service can ask Costa for anything, Lindner needs a contract agreement for Costa's supplier certificates API. The service obtains it without the buyer noticing, with two requests to Lindner's own connector.
+
+:::note[In this lecture]
+- The catalog request to one counterparty.
+- How to pick the right dataset and offer.
+- The contract request and the states of a negotiation.
+- What can go wrong and how it shows.
+:::
+
+## Ask one counterparty for its catalog
+
+You need two facts about the counterparty: its DID and the DSP address of its connector. The DID is the stable identifier. Store it with the partner. The address can come from the partner, or from the counterparty's DID document, which lists the addresses of its dataspace services.
+
+```http
+POST /api/management/v5/participants/lindner-bikes/catalog/request HTTP/1.1
+Host: danube-cloud.example
+Authorization: Bearer <access token>
+Content-Type: application/json
+```
+
+```json
+{
+  "@context": ["https://w3id.org/edc/connector/management/v2"],
+  "@type": "CatalogRequest",
+  "counterPartyAddress": "https://danube-cloud.example/api/dsp/costa-frames/bike-dataspace",
+  "counterPartyId": "did:web:identity.danube-cloud.example:costa-frames",
+  "profile": "bike-dataspace"
+}
+```
+
+The call needs the scope `management-api:catalog:read`. It returns when Lindner's connector has the answer. In between, the two connectors exchange the catalog request of the Dataspace Protocol, and Costa's connector verifies Lindner's membership.
+
+:::caution
+`profile` names the dataspace profile to use for the exchange. It replaces the older field `protocol`. A request must contain exactly one of the two. At the time of writing, demonstrators and many examples still send `protocol`.
+:::
+
+## Pick the dataset
+
+The response is a catalog. The part your application reads looks like this.
+
+```json
+{
+  "@type": "Catalog",
+  "participantId": "did:web:identity.danube-cloud.example:costa-frames",
+  "dataset": [
+    {
+      "@id": "supplier-certificates-v1-provider",
+      "@type": "Dataset",
+      "dct:type": { "@id": "https://bike-dataspace.example/api/supplier-certificates" },
+      "dct:subject": { "@id": "https://bike-dataspace.example/api/supplier-certificates/provider" },
+      "dcat:version": "1.0",
+      "hasPolicy": [
+        {
+          "@id": "c3VwcGxpZXItY2VydGlmaWNhdGVzLXYxLXByb3ZpZGVy:c3VwcGxpZXItY2VydGlmaWNhdGVzLXYxLXByb3ZpZGVy:ZjA0ZTI2YjgtM2E1Yy00ZDFlLTliNzItOGMxZDZlNWYwYTMx",
+          "@type": "Offer",
+          "permission": [
+            {
+              "action": "use",
+              "constraint": [
+                {
+                  "leftOperand": "https://bike-dataspace.example/policy/Membership",
+                  "operator": "eq",
+                  "rightOperand": "active"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "distribution": [
+        {
+          "@type": "Distribution",
+          "format": "https://w3id.org/dspace-sig/profile/http-pull"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Select the dataset by `dct:subject` and `dcat:version`, not by its ID or name. Together they say which API is behind the offer, and they are the same for every provider.
+
+Require exactly one dataset with these two values and exactly one offer in `hasPolicy`. Zero datasets means that the counterparty has not activated the use case or that you are not eligible to see the offer. The catalog does not tell you which. More than one is a configuration error on the provider's side. Stop and report it, and do not guess.
+
+Check also that `distribution` lists the transfer type you intend to use.
+
+## Request the contract
+
+The contract request contains the offer as the catalog returned it. Copy `@id` and `permission` unchanged. Add `target` with the ID of the dataset and `assigner` with the DID of the provider.
+
+```json
+{
+  "@context": ["https://w3id.org/edc/connector/management/v2"],
+  "@type": "ContractRequest",
+  "counterPartyAddress": "https://danube-cloud.example/api/dsp/costa-frames/bike-dataspace",
+  "profile": "bike-dataspace",
+  "policy": {
+    "@id": "c3VwcGxpZXItY2VydGlmaWNhdGVzLXYxLXByb3ZpZGVy:c3VwcGxpZXItY2VydGlmaWNhdGVzLXYxLXByb3ZpZGVy:ZjA0ZTI2YjgtM2E1Yy00ZDFlLTliNzItOGMxZDZlNWYwYTMx",
+    "@type": "Offer",
+    "assigner": "did:web:identity.danube-cloud.example:costa-frames",
+    "target": "supplier-certificates-v1-provider",
+    "permission": [
+      {
+        "action": "use",
+        "constraint": [
+          {
+            "leftOperand": "https://bike-dataspace.example/policy/Membership",
+            "operator": "eq",
+            "rightOperand": "active"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Send it with `POST` to `/contractnegotiations` of your participant context, with the scope `management-api:negotiations:write`. The response contains the ID of a **contract negotiation**. The negotiation itself has only begun.
+
+## Follow the negotiation
+
+A negotiation is asynchronous. It moves through states while the two connectors exchange messages.
+
+<StateFlow
+  states={['REQUESTED', 'AGREED', 'VERIFIED', 'FINALIZED']}
+  transitions={[{ from: ['REQUESTED', 'AGREED', 'VERIFIED'], to: 'TERMINATED' }]}
+  finals={['FINALIZED', 'TERMINATED']}
+  caption="The states of a contract negotiation that an application waits for. FINALIZED and TERMINATED are final."
+/>
+
+Read the state with `GET` on `/contractnegotiations/{id}/state`. When it is `FINALIZED`, read the negotiation with `GET` on `/contractnegotiations/{id}` and store its `contractAgreementId`. This ID is what the next lecture needs. When the state is `TERMINATED`, the field `errorDetail` holds the reason.
+
+For an offer like Costa's the negotiation takes a few seconds. Poll with growing intervals, or react to events as lecture 14 describes. Do not hold a user's request open while you wait. A provider can keep a contract request for approval by a person, and the negotiation then stays `REQUESTED` until someone decides.
+
+## What can go wrong
+
+| What you see | Likely cause | Reaction |
+|---|---|---|
+| The catalog request fails | Wrong address, the counterparty is unreachable, or your credentials could not be verified | Report it. Retry later for network errors. |
+| The catalog has no matching dataset | The use case is not active on the other side, or you are not eligible | Tell the user. Do not retry in a loop. |
+| The negotiation ends `TERMINATED` | The contract policy is not met, or the offer changed since you read the catalog | Read `errorDetail`. Request the catalog again before a new attempt. |
+| The negotiation stays `REQUESTED` | The provider holds it for approval, or is slow | Keep waiting. Show it as pending. |
+| Your own call timed out | Unknown. A negotiation may or may not exist. | Do not repeat blindly. Lecture 8 shows what to do. |
+
+## Key takeaways
+
+- A catalog request goes to one counterparty and needs its DID and DSP address.
+- Select the dataset by subject and version, and require exactly one dataset and one offer.
+- The contract request repeats the offer from the catalog, with target and assigner.
+- A negotiation is asynchronous. `FINALIZED` yields the agreement ID, and `TERMINATED` yields a reason.
+- A provider can hold a request for approval, so never block a user on a negotiation.
+
+## Go deeper
+
+- [Dataspace Protocol specification](https://eclipse-dataspace-protocol-base.github.io/DataspaceProtocol/) defines the catalog and contract negotiation protocols and their states.
+- [EDC documentation: Control plane](https://eclipse-edc.github.io/documentation/for-adopters/control-plane/) covers catalogs, contract negotiations, and why negotiations must be handled asynchronously.
+- [EDC documentation: Contract negotiation approval](https://eclipse-edc.github.io/documentation/for-adopters/control-plane/policy-engine/negotiation-approval/) describes how a provider holds a negotiation for a manual decision.
+- [Management API reference](https://eclipse-edc.github.io/Connector/openapi/management-api/) lists the fields of the requests and responses.
+- [A Dataspace Use Case: Finding and agreeing](../../use-case/06-finding-and-agreeing/) tells the same exchange as a story.

@@ -1,0 +1,113 @@
+---
+title: "Design the use-case protocol"
+description: "Why a use case needs its own application protocol on top of the dataspace protocols, shown on the supplier certificate protocol with its two APIs, its messages, and its states."
+---
+
+import StateFlow from '../../../components/diagrams/StateFlow.astro';
+
+The channels between Costa Frames and Lindner Bikes are ready. Nothing has been exchanged yet, because nothing so far says what a request for a certificate looks like. The dataspace protocols end at this point. What the two applications say to each other is defined per use case, and somebody has to write it down.
+
+:::note[In this lecture]
+- Where the Dataspace Protocol stops and the use case begins.
+- The supplier certificate protocol as an example.
+- Which calls belong to which of the two APIs.
+- Rules for designing such a protocol.
+:::
+
+## Where the Dataspace Protocol stops
+
+The Dataspace Protocol defines how to find an offer, conclude a contract, and start a transfer. It says nothing about what travels once the flow is open. Two applications that follow it perfectly cannot exchange certificates if one expects a request and the other a list.
+
+A use case needs an **application protocol**: the calls, the messages, and the states that both sides implement. It is the dataspace's own specification: the owner of the use case writes it, next to the data sharing agreement that participants sign, and the association approves it. Each API gets an identifier and a version, and assets carry both in their properties.
+
+## The supplier certificate protocol
+
+The specification of the Bike Dataspace defines two APIs. The **provider API** is offered by the company that holds certificates. Its customers call it.
+
+| Call | Purpose |
+|---|---|
+| `POST /requests` | Ask for a certificate of a given type |
+| `GET /requests/{id}` | Read the state of a request |
+| `GET /certificates` | List the certificates the caller may see |
+| `GET /certificates/{id}` | Read the metadata of a certificate |
+| `GET /certificates/{id}/document` | Download the document |
+| `POST /requests/{id}/feedback` | Accept or reject what was received |
+
+The **consumer API** is offered by the customer. Its suppliers call it.
+
+| Call | Purpose |
+|---|---|
+| `POST /answers` | Deliver the answer to a request |
+| `POST /notices` | Announce that a certificate is available, revised, or withdrawn |
+
+Lindner asks Costa for the ISO 9001 certificate with a small message.
+
+```json
+{
+  "messageId": "0f8b6a52-6c1e-4d0a-9a43-2f6a1b7c9e10",
+  "certificateType": "iso-9001"
+}
+```
+
+Costa's side answers the call at once with the ID of the request and its state.
+
+```json
+{
+  "requestId": "3e9d7c1a-5b24-4f86-b0d2-6a4c8e1f7b95",
+  "status": "RECEIVED"
+}
+```
+
+When Costa has decided, its application delivers the answer to Lindner's consumer API.
+
+```json
+{
+  "messageId": "a41c9d37-8e02-4b5f-9a6c-1d3e5f7b9c20",
+  "requestId": "3e9d7c1a-5b24-4f86-b0d2-6a4c8e1f7b95",
+  "status": "FULFILLED",
+  "certificateId": "9c2b7f4e-1a63-4d85-8e0f-5b7d9a1c3e46",
+  "version": 3
+}
+```
+
+Lindner then reads the metadata and downloads the document through the provider API. A declined request carries a reason instead of a certificate, for example `not-a-partner`. A refusal is a normal answer of the protocol and not an error.
+
+## States and notices
+
+A request has three states, and the providing side owns them.
+
+<StateFlow
+  states={['RECEIVED', 'FULFILLED']}
+  transitions={[{ from: 'RECEIVED', to: 'DECLINED' }]}
+  finals={['FULFILLED', 'DECLINED']}
+  caption="The states of a certificate request. Both end states are final."
+/>
+
+A request can be fulfilled in the response to the first call, when the supplier's application already knows that this customer may have the certificate. Otherwise it stays `RECEIVED` until a rule or a person decides.
+
+Feedback is a separate fact. After the download the customer's application reports `ACCEPTED`, or `REJECTED` with the errors it found.
+
+Three notices cover the life of a certificate after it was shared: `AVAILABLE` when the supplier shares a certificate without a request, `REVISED` when a new version replaces the old one, and `WITHDRAWN` when it is no longer valid or no longer shared.
+
+A notice is a signal. It says what changed and carries no document. The data is still fetched through the provider API under the agreement.
+
+## Design rules
+
+- **Identify and version the API.** An incompatible change gets a new version and therefore a new asset. A participant can offer both versions side by side during a transition.
+- **Make every write repeatable.** The sender creates a `messageId`. A receiver that sees the same ID again returns the first result and does nothing else. Retries after a timeout are then safe.
+- **Give every state one owner.** The supplier owns the state of a request, and the customer owns the feedback. Neither side derives a state from silence.
+- **Keep messages small and documents separate.** A document is fetched by its own call and comes with a hash in the metadata, so the receiver can check what it got.
+- **Take identity from the token.** No message has a sender field. Who is calling is in the flow token. A sender field in a body is a claim that anyone can type.
+- **Let the first API work alone.** If a notice cannot be delivered, the customer finds the same information by reading the provider API. The consumer API makes the exchange faster, and correctness does not depend on it.
+
+## Key takeaways
+
+- The Dataspace Protocol ends where the flow starts. A use case defines its own application protocol.
+- The owner of a use case specifies its protocol and gives each API an identifier and a version. Assets carry both.
+- The supplier certificate protocol has a provider API for requests and retrieval, and a consumer API for answers and notices.
+- Good protocols have repeatable writes, explicit states with one owner, small messages, and no identity in the body.
+
+## Go deeper
+
+- [Dataspace Protocol specification](https://eclipse-dataspace-protocol-base.github.io/DataspaceProtocol/) shows what the dataspace protocols define, and by omission what they leave to the use case.
+- [Design Trust, Credentials, and Dataspace Profiles: Use cases and agreements](../../trust-and-profiles/08-use-cases-and-agreements/) covers who owns a use-case specification and how it is governed.

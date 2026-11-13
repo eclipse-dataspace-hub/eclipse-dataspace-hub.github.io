@@ -1,0 +1,107 @@
+---
+title: "Platform and profile"
+description: "The two parts of a dataspace platform: a generic runtime installed with the Core Platform Distribution, and a dataspace profile that makes it a platform for one dataspace."
+---
+
+import LayerStack from '../../../components/diagrams/LayerStack.astro';
+
+Danube Cloud's team has chosen its operating model. The next question is what to install. The answer has two parts, and keeping them apart organizes the rest of this path.
+
+:::note[In this lecture]
+- What the Core Platform Distribution contains and what it leaves out on purpose.
+- What a dataspace profile adds.
+- What sits above the platform.
+- The order of work for an operator.
+:::
+
+## The core platform: a runtime without a dataspace
+
+The **Core Platform Distribution** is a Helm chart from the Connector Fabric Manager project. One installation brings up a complete multi-participant runtime.
+
+| Component | What it does |
+|---|---|
+| **Connector** | Offers, catalogs, contract negotiations, and control of transfers for every participant context. |
+| **Identity Hub** | The Credential Service of every hosted participant: keys, identity documents, credentials, presentations. |
+| **Issuer Service** | Issues and revokes credentials. It is part of EDC Identity Hub. |
+| **Siglet** | Issues and checks the access tokens of data flows. Lecture 10 covers it. |
+| **Connector Fabric Manager** | Creates, changes, and removes the runtime of a participant across all these services. |
+| **jwtlet** | The token exchange service. It gives a workload a short-lived token for the platform APIs. |
+| **PostgreSQL, Vault, NATS** | State, keys, and messaging, with defaults meant for development. |
+
+What the chart does not contain is a dataspace. After the installation there is an issuer that cannot issue anything yet, a connector that knows no policy terms and asks nobody for credentials, and not a single participant. This is deliberate. The same chart can serve a bicycle dataspace and a health dataspace. It has no notion of membership either. Which credentials exist, and whether one of them states membership, is for the profile to say.
+
+## The dataspace profile: everything that belongs to one dataspace
+
+A **dataspace profile** is the set of definitions that turns this runtime into a platform for one dataspace. Each definition has a reader.
+
+| The profile tells | What |
+|---|---|
+| The connector | Which protocol version to speak, which issuers to trust, which credentials to ask a counterparty for, and what each policy term means. |
+| The issuer | Which credentials exist and which attested facts they carry. |
+| Provisioning | What a new participant of this dataspace receives. |
+| The installation | A few values that the services read at start, such as the credential format. |
+| Applications | The identifiers of the use cases and of their APIs. |
+
+The Bike Industry Association decides what the profile says and publishes it. Danube Cloud takes these files and applies them. A second operator applies the same content to its own platform, and Brandt Batteries applies it to its own connector. If all of them apply the same profile, their participants understand each other.
+
+JAD, the demonstrator of the Eclipse Dataspace Hub, shows this split. It installs the Core Platform Distribution first and then a chart of its own, `jad-dataspace-profile`, on top.
+
+## What sits above the platform
+
+Three kinds of software are neither in the chart nor in the profile.
+
+- **A portal for people.** Staff of Costa or Lindner sign in to apply for membership and to follow the state of their onboarding. The portal submits an application to the association's onboarding API and, once it is approved, has the platform set up the member. Danube Cloud builds it for its customers.
+- **An onboarding application.** It offers the onboarding API, and the association's staff review the applications in it. The association runs it.
+- **Use-case applications.** The supplier certificate service holds a member's certificates and answers requests for them. Danube Cloud hosts it.
+
+All three use the platform through its APIs, each with an identity of its own.
+
+<LayerStack
+  layers={[
+    {
+      label: 'People and applications',
+      rows: [['Danube Cloud portal', 'Onboarding application', 'Use-case applications']],
+      boundary: 'Gateway',
+    },
+    {
+      label: 'Core Platform Distribution: services for participants',
+      rows: [
+        ['Connector', 'Identity Hub', 'Siglet'],
+        ['Connector Fabric Manager', 'jwtlet'],
+      ],
+    },
+    { label: 'Core Platform Distribution: issuer of the dataspace', rows: [['Issuer Service']] },
+    { label: 'Infrastructure', rows: [['PostgreSQL', 'Vault', 'NATS']] },
+  ]}
+  caption="The layers of Danube Cloud's platform. The chart installs the two middle layers, and the dataspace profile configures them. The Issuer Service stands apart, because it serves the association and not a participant."
+/>
+
+## The order of work
+
+The rest of this path follows the order in which an operator works.
+
+1. Prepare the cluster: gateway, public names, state. Lecture 3.
+2. Install the core platform. Lecture 4.
+3. Give jobs and applications access to the platform APIs. Lecture 5.
+4. Get the dataspace profile from the association, and read what it contains. Lecture 6.
+5. Apply the profile. Lecture 7.
+6. See how the issuer issues the credentials of the dataspace. Lecture 8.
+7. Provision participants. Lecture 9.
+8. Connect data planes and applications. Lecture 10.
+9. Operate, upgrade, and grow. Lecture 11.
+
+Steps 1 to 3 are the same for every dataspace. Steps 4 to 6 are done once per dataspace and repeated when its rules change. Steps 7 and 8 repeat for every member and every application.
+
+## Key takeaways
+
+- The Core Platform Distribution installs a multi-participant runtime: connector, Identity Hub, Issuer Service, Siglet, Connector Fabric Manager, jwtlet, and their infrastructure.
+- The chart contains no dataspace. Trust, credentials, and policy terms come from a dataspace profile.
+- The governance authority decides the content of the profile. Every operator and every self-hosted participant applies it.
+- Portals, onboarding, and use-case applications sit above the platform and use it through its APIs.
+
+## Go deeper
+
+- [Core Platform Distribution: README](https://github.com/eclipse-cfm/core-platform-distribution/blob/main/README.md) lists the components of the chart and its configuration.
+- [Decision record: Core Platform Distribution](https://github.com/eclipse-cfm/.github/blob/main/docs/developer/decision-records/2026-07-01-core_platform_distro/README.md) gives the reasons for separating the generic platform from the parts that belong to one dataspace.
+- [JAD: README](https://github.com/eclipse-dataspace-hub/jad/blob/main/README.md) shows the two layers installed one after the other on a local cluster.
+- [Design Trust, Credentials, and Dataspace Profiles: The dataspace profile](../../trust-and-profiles/03-the-dataspace-profile/) covers the profile as a governance artifact.

@@ -1,0 +1,111 @@
+---
+title: "Events and resilience"
+description: "How an application follows the asynchronous state of negotiations and transfers with events, an inbox, retries, and a reconciliation job, without losing or repeating work."
+---
+
+import Flow from '../../../components/diagrams/Flow.astro';
+
+The supplier certificate service works on a good day. Then a transfer is terminated at night, a negotiation takes four minutes because a person approved it, and a restart happens between two steps of a channel. Negotiations and transfers change state on their own schedule. The application has to stay correct while they do.
+
+:::note[In this lecture]
+- When to poll and when to listen.
+- Events as the platform delivers them.
+- A consumer that neither loses nor repeats events.
+- Why events are hints, and the job that catches what they miss.
+:::
+
+## Poll or listen
+
+**Polling** reads the state of one negotiation or transfer from the Management API. It is the right tool for the few seconds after you started a step yourself. It is wasteful for hundreds of transfers that stay started long after you opened them.
+
+**Events** are published by the platform whenever a state changes. They tell you about changes that happen later or that the other side caused.
+
+Use both, and add a periodic job that compares your records with the connector. Events make the application fast. The job makes it correct.
+
+## Events as the platform delivers them
+
+On the Danube Cloud platform, the connector and the Credential Service publish their events to a NATS JetStream stream. Each event is published on a subject of the form `events.<name>`.
+
+| Subject | Published when |
+|---|---|
+| `events.contract.negotiation.finalized` | A negotiation reached an agreement |
+| `events.contract.negotiation.terminated` | A negotiation ended without an agreement |
+| `events.transfer.process.terminated` | A transfer was terminated |
+| `events.credentialoffer.received` | The issuer offered a credential to a member |
+
+Each message is a CloudEvent. Trimmed to the fields a consumer uses, a terminated transfer looks like this.
+
+```json
+{
+  "specversion": "1.0",
+  "id": "c6e4a1f0-2b7d-4e59-8d13-7a0f5b9c2e44",
+  "source": "controlplane",
+  "type": "org.eclipse.edc.connector.controlplane.transfer.spi.event.TransferProcessTerminated",
+  "time": "2026-11-12T10:42:07Z",
+  "data": {
+    "transferProcessId": "7c2a9f4e-51b8-4d0c-a2f3-9e6b1c8d4a70",
+    "participantContextId": "lindner-bikes",
+    "type": "CONSUMER",
+    "assetId": "supplier-certificates-v1-provider",
+    "contractId": "b7d4e2a1-93c6-4f0b-8a5e-2c1d7f6e9b30",
+    "reason": "Agreement retired"
+  }
+}
+```
+
+`participantContextId` tells you which tenant the event concerns.
+
+Two properties of this stream shape the design. It carries the events of all participant contexts on the platform, so the operator grants access only to applications it trusts. And publishing is best effort: if the connector cannot publish an event, it logs the error and does not try again. Events can be missing.
+
+## A consumer that neither loses nor repeats
+
+<Flow
+  steps={[
+    { actor: 'Connector', text: 'publishes an event to the stream' },
+    { actor: 'Durable consumer', text: 'remembers what your application has acknowledged' },
+    { actor: 'Worker', text: 'stores the event in the inbox, then acknowledges it' },
+    { actor: 'Reaction', text: 'reads the current state from the Management API and acts' },
+    { actor: 'Reconciliation job', text: 'compares channels with the connector on a schedule', apart: true },
+  ]}
+  caption="The path of an event through the application. The reconciliation job works beside it and does not depend on events."
+/>
+
+1. **Use a durable consumer.** A consumer with a name keeps its position in the stream across restarts of your application.
+2. **Store first, acknowledge afterwards.** Insert each event as a row into an **inbox** table and commit. Acknowledge the message only then. If the application stops in between, the stream delivers the message again.
+3. **Make the inbox unique.** Put a unique key on the `source` and `id` of the CloudEvent. A redelivered event fails the insert and is dropped.
+4. **Process from the inbox.** A worker claims a row with a lease, runs the reaction, and records the result. If the worker dies, the lease expires and another worker takes the row.
+5. **Retry with growing delays.** After a maximum number of attempts, the row is marked as failed and shown to an operator.
+
+## Events are hints
+
+An event says that something changed. It is not the current truth. Events arrive late, twice, in a different order, or not at all.
+
+A reaction therefore never acts on the content of the event alone. It takes the ID from the event, reads the current state from the Management API, and acts on what it reads.
+
+For the event above, the reaction looks for the channel whose flow is that transfer process. If there is none, it ignores the event. If there is one, it reads the state of the transfer and marks the channel stale when the state is `TERMINATED`. Running the same reaction twice changes nothing the second time, and the order of two events no longer matters.
+
+## The safety net
+
+A scheduled job, for example once an hour, walks through the channels.
+
+- For each `ready` channel, it reads the transfer state and marks the channel stale if the transfer is no longer started.
+- For each channel that has been `opening` for too long, it reads the negotiation or the transfer and advances or fails the channel.
+- For each `blocked` channel, it tries to find out what exists.
+- It replaces flows that are older than the limit from lecture 13, and it retries parked outbound messages.
+
+With this job, a lost event delays a correction by one interval at most.
+
+Resilience also depends on how objects are created. Fixed IDs make the publishing of offers repeatable, and message IDs do the same for the use-case protocol. Negotiations and transfers get their IDs from the connector. That is why channels have a `blocked` state for the moment when you cannot know whether the connector created something.
+
+## Key takeaways
+
+- Poll for steps you started. Listen for changes that come later. Reconcile on a schedule.
+- The platform publishes CloudEvents on subjects of the form `events.<name>`. Publishing is best effort.
+- Store an event before you acknowledge it, and make the inbox unique on source and ID.
+- Treat events as hints. Read the current state before you act.
+
+## Go deeper
+
+- [EDC documentation: Observability](https://eclipse-edc.github.io/documentation/for-adopters/observability/#5-publishing-events-to-nats) describes the ways to receive events, including callbacks and the publishing to NATS.
+- [EDC documentation: Control plane](https://eclipse-edc.github.io/documentation/for-adopters/control-plane/#working-with-asynchronous-messaging-and-events) explains asynchronous messaging and warns against wrapping it in synchronous calls.
+- [NATS documentation: JetStream consumers](https://docs.nats.io/nats-concepts/jetstream/consumers) explains durable consumers and acknowledgment.

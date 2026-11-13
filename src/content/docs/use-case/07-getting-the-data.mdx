@@ -1,0 +1,85 @@
+---
+title: "Getting the data"
+description: "How the certificates travel from Costa to Lindner once a contract exists, and how Lindner stays up to date when a certificate is renewed."
+---
+
+import Exchange from '../../../components/diagrams/Exchange.astro';
+
+Lindner and Costa have a contract agreement. Now the certificates need to reach Lindner's supplier management system. This step is called a **transfer**. It has two parts, and a different building block does each part.
+
+:::note[In this lecture]
+- The two parts of a transfer: permission and delivery.
+- Which building block does which part.
+- How a consumer keeps receiving current data without negotiating again.
+:::
+
+## Two parts, two building blocks
+
+Every participant has the same building blocks: a connector, a data plane, and its own business systems. A transfer divides the work between them in a fixed way.
+
+| Part | Done by | What happens |
+|---|---|---|
+| **1. Permission** | The connectors | Lindner asks for the transfer. Costa checks the agreement and allows it. |
+| **2. Delivery** | The data planes | The certificates go from Costa to Lindner. |
+
+<Exchange
+  left={{ title: 'Costa Frames', role: 'Provider' }}
+  right={{ title: 'Lindner Bikes', role: 'Consumer' }}
+  rows={[
+    {
+      left: 'Connector',
+      right: 'Connector',
+      link: { label: '1. Permission', direction: 'both' },
+    },
+    {
+      left: { title: 'Data plane', text: 'takes the certificates from the document store' },
+      right: { title: 'Data plane', text: 'hands them to supplier management' },
+      link: { label: '2. Delivery', direction: 'right' },
+    },
+    { left: 'Document store', right: 'Supplier management' },
+  ]}
+  caption="The connectors give permission. The data planes deliver. The business systems on both sides are only touched by their own data plane."
+/>
+
+## Part 1: permission
+
+Lindner's connector sends a **transfer request** to Costa's connector. The request names the contract agreement. Costa's connector confirms that the agreement exists and is still valid, and allows the transfer.
+
+Neither connector touches a certificate. Their job is to authorize and to coordinate. Once the transfer is allowed, each connector tells its own data plane what to do.
+
+## Part 2: delivery
+
+Costa's data plane is the only component that reaches Costa's document store. It delivers the certificates to Lindner's data plane, which hands them to the supplier management system.
+
+The delivery is protected by an **access token**: a short-lived key that Costa's side issues for this one transfer under this one agreement. Without a valid token, Costa's data plane hands out nothing.
+
+The data goes straight from Costa to Lindner. It does not pass through the association, and the connectors do not see it.
+
+## Staying up to date
+
+Two years later Costa's ISO 9001 certificate is renewed. Costa replaces the PDF in its document store. It does not notify thirty customers.
+
+Lindner's agreement with Costa is still in place. Lindner can ask for the certificates again under the same agreement, and it receives the renewed version. Lindner might do this on a schedule, or whenever a buyer opens Costa's supplier record.
+
+This is the main practical difference from sending files. The agreement gives Lindner continuing access to the current data at its source. A copy in a mailbox can never do that.
+
+Some use cases also need the provider to tell consumers that something changed. A provider can send a notification to the consumers that hold an agreement, and they then fetch the new data. The notification is a signal. The data still travels through the data plane under the agreement.
+
+## What each side kept
+
+Costa kept control. The certificates never left its systems except in response to an authorized request under a contract. Costa can see which agreements exist and which transfers took place.
+
+Lindner gained reliability. It obtained the certificates from the supplier itself, with the supplier's identity verified, and can obtain the current version again at any time.
+
+## Key takeaways
+
+- A transfer has two parts. The connectors give permission, and the data planes deliver.
+- The delivery needs an access token that is valid for one transfer under one agreement.
+- Data flows directly from provider to consumer.
+- An agreement can stay in place, so the consumer can return for current data without a new negotiation.
+
+## Go deeper
+
+- [Dataspace Protocol specification](https://eclipse-dataspace-protocol-base.github.io/DataspaceProtocol/) defines the transfer process protocol.
+- [Data Plane Signaling specification](https://eclipse-dataplane-signaling.github.io/dataplane-signaling) defines how connectors instruct data planes.
+- [Build a Dataspace Application: Transfer data](../../application/07-transfer-data/) and [Data plane architecture](../../application/09-data-plane-architecture/) cover the developer view, including the ways data can be fetched or delivered.

@@ -1,0 +1,94 @@
+---
+title: "Roles and responsibilities"
+description: "The roles a dataspace needs, who decides, attests, signs, and runs, and which duties must stay apart when one organization holds several roles."
+---
+
+import Flow from '../../../components/diagrams/Flow.astro';
+
+The working group starts with a list of names next to a list of duties. The use-case path named three kinds of responsibility: setting the rules, running the platform, and sharing data. To design trust the group needs a finer picture, because "setting the rules" covers several different acts.
+
+:::note[In this lecture]
+- The roles of a dataspace, in the vocabulary of the IDSA Rulebook.
+- Four acts that are easy to mix up: deciding, attesting, signing, and running.
+- Which duties stay apart even when one organization holds several roles.
+:::
+
+## The roles
+
+| Role | In the Bike Dataspace | Responsible for |
+|---|---|---|
+| **Dataspace governance authority** | Bike Industry Association | The rules: who may join, what must be proven, the profile, and the terms. |
+| **Credential issuer** | Bike Industry Association | Credentials for the facts it has confirmed. Every member accepts its signature, which makes it the **trust anchor**. |
+| **Platform operator** | Danube Cloud | Connectors, Credential Services, and data planes for members that do not run their own, and often the route by which they apply. |
+| **Participant** | Costa, Lindner, Hansen, Brandt | Its offers, its requests, and what its applications release. |
+| **Use-case owner** | A group of members appointed by the association | The definition of one use case: its data, its conditions, and its data sharing agreement. |
+| **Application provider** | Danube Cloud for the supplier certificate service, Brandt for its own battery data service | Software that implements a use case for one participant or for many. |
+
+The Rulebook describes the governance authority as a function: the rules and processes of a dataspace, not a server that requests pass through. It also states that the operator of a dataspace service is not the governance authority. An operator carries out rules. It does not make them.
+
+The last two roles appear with the first use case. Lectures 8 and 9 come back to them.
+
+## Decide, attest, sign, run
+
+Four different acts lead from an application to a credential that other members rely on.
+
+- **Decide.** The association decides whether Costa becomes a member. People make this decision under the association's rules.
+- **Attest.** A reviewer at the association confirms a fact after seeing evidence. Costa accepted the terms. Hansen's permit is valid and covers dismantling.
+- **Sign.** The Issuer Service turns an attested fact into a signed credential. This is a technical act. Danube Cloud operates the Issuer Service on the association's behalf, and the service signs only what the association attested.
+- **Run.** Danube Cloud runs the software for hosted members. Brandt runs its own.
+
+<Flow
+  steps={[
+    { actor: 'Bike Industry Association', text: 'decides on admission and attests facts' },
+    { actor: 'Issuer Service', text: 'signs a credential for each attested fact' },
+    { actor: 'Credential Service of a member', text: 'holds the credentials and presents them' },
+    { actor: 'Connector of another member', text: 'checks them against its policies' },
+    { actor: 'Danube Cloud', text: 'runs these components and decides none of this', apart: true },
+  ]}
+  caption="From a decision to a check. The operator runs components along this chain and has no say in what passes through it."
+/>
+
+## Duties that stay apart
+
+**The operator never decides membership.** Danube Cloud could create a connector for any company. Without a membership credential that connector sees no offer and gets no contract. Only the association can have one issued.
+
+**The operator signs with the members' keys.** The platform signs on behalf of a hosted member, so it must be able to use that member's private keys. Cloud platforms offer two arrangements.
+
+- **Managed keys.** The platform creates the keys in a key service that signs on request and never hands a key out, not even to the operator's staff. This is the usual arrangement.
+- **Bring your own key.** A member that has to control its keys creates them itself and lets the platform use them. On some platforms the key stays in the member's own key service, and the member can withdraw it.
+
+Record in the agreement with the operator which arrangement applies, who can use a key, how each use is logged, and what happens to the keys when a member leaves or moves.
+
+**The issuer's identifier belongs to the association.** The issuer of the Bike Dataspace is identified as:
+
+```text
+did:web:issuer.bike-dataspace.example:issuer
+```
+
+The name is on the association's own domain, although Danube Cloud operates the service. Whoever controls the domain of a `did:web` identifier controls the identity. Every connector trusts this identifier, and every credential names it. On Danube Cloud's domain, a change of operator would change the trust anchor for every member at once.
+
+**The association does not see the data.** It is asked when a credential is issued, not when it is used.
+
+## One organization, several roles
+
+Roles can be combined. An association can operate the platform itself. A large manufacturer can found a dataspace, set its rules, and be its biggest participant. That works as long as the duties stay distinguishable:
+
+- different people review applications and operate the platform;
+- every admission and every attestation is recorded outside the platform's own logs;
+- the rules apply to the organization's own participation as to anyone else's.
+
+Two questions test the separation. Could another operator take over the platform without the association admitting its members again? Could the association appoint another issuer without the platform being reinstalled? If both answers are yes, the roles are separate where it matters.
+
+## Key takeaways
+
+- A dataspace needs a governance authority, an issuer, operators, and participants. Use cases add an owner and application providers.
+- Deciding, attesting, signing, and running are different acts with different owners.
+- The operator runs components and signs with the keys of hosted members, which it manages or which a member brings. It never decides who is a member.
+- Keep the issuer's identifier on a domain that the governance authority controls.
+
+## Go deeper
+
+- [IDSA Rulebook: Roles](https://kb.internationaldataspaces.org/external/rulebook/005_Roles/) defines the participant and the common business roles.
+- [IDSA Rulebook: Dataspace governance authority](https://kb.internationaldataspaces.org/external/rulebook/006_DSGA/) describes the governance function and the ways to implement it.
+- [A Dataspace Use Case: The participants](../../use-case/02-the-participants/) introduces the organizations of the Bike Dataspace.
+- [Set Up a Dataspace Platform: Operating models](../../platform-setup/01-operating-models/) looks at the same roles from the operator's side.

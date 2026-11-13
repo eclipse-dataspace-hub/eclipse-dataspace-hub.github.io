@@ -1,0 +1,118 @@
+---
+title: "Access and workload identity"
+description: "How jobs and applications get access to the platform APIs without passwords: token exchange with jwtlet, scopes, and the mapping that limits each workload."
+---
+
+import Sequence from '../../../components/diagrams/Sequence.astro';
+
+The platform is running, and all its administration routes are protected. Danube Cloud's team now has to let the right callers in: the job that applies the profile, the workflow that provisions members, and later the applications. None of them gets a password.
+
+:::note[In this lecture]
+- Why people and workloads are handled separately.
+- How a workload obtains a token through token exchange.
+- How scopes and mappings limit what a token can do.
+- Which workload gets which mapping.
+:::
+
+## People and workloads
+
+People sign in to applications: Danube Cloud's portal, the association's onboarding application. They use the identity provider of whoever runs that application. The chart contains no identity provider for people and no portal.
+
+The platform APIs are called by **workloads**: pods that run a job, an agent, or an application. A person's token never reaches a platform API. The application decides what its user may do and then calls the platform in its own name.
+
+## Token exchange
+
+Every pod in Kubernetes already has an identity, its service account. The platform uses that identity and needs no client secrets. A workload presents its service account token to **jwtlet**, the token exchange service, and receives a short-lived access token in return. The exchange follows RFC 8693.
+
+```sh
+curl -X POST "https://danube-cloud.example/api/auth/token" \
+  --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" \
+  --data-urlencode "subject_token=${SERVICE_ACCOUNT_TOKEN}" \
+  --data-urlencode "subject_token_type=urn:ietf:params:oauth:token-type:jwt" \
+  --data-urlencode "resource=costa-frames" \
+  --data-urlencode "scope=management-api:assets:read" \
+  --data-urlencode "audience=edcv"
+```
+
+| Parameter | Meaning |
+|---|---|
+| `subject_token` | The pod's service account token. It must be issued for the audience that jwtlet expects, so it cannot be replayed elsewhere. |
+| `resource` | The participant context that the workload wants to act for. It becomes the subject of the new token. |
+| `scope` | What the workload wants to do. |
+| `audience` | Which services the new token is for. `edcv` is the chart's default. |
+
+Workloads inside the cluster call the service directly, at `http://jwtlet.edc-v.svc.cluster.local:8080/token`.
+
+<Sequence
+  actors={{ wl: 'Workload', jw: 'jwtlet', k8s: 'Kubernetes', api: 'Platform API' }}
+  steps={[
+    { from: 'wl', to: 'jw', label: 'Service account token, participant context, scope' },
+    { from: 'jw', to: 'k8s', label: 'Is this token genuine, and whose is it?' },
+    { at: 'jw', label: 'Finds the mapping, signs a short-lived token' },
+    { from: 'jw', to: 'wl', label: 'Access token' },
+    { from: 'wl', to: 'api', label: 'Request with the access token' },
+    { at: 'api', label: 'Checks signature, subject, and scope' },
+  ]}
+  caption="Token exchange. The workload never holds a long-lived secret, and jwtlet never trusts a claim that it did not verify with Kubernetes."
+/>
+
+The connector, the Identity Hub, and the Issuer Service trust jwtlet as their token issuer. Each of them checks the signature against jwtlet's published keys, reads the participant context from the subject, and reads the permissions from the scope.
+
+## Scopes and mappings
+
+jwtlet decides with a **mapping**. A mapping says which service account may act for which participant context, with which scopes at most.
+
+```json
+{
+  "clientIdentifier": "system:serviceaccount:edc-v:supplier-certificate-service",
+  "participantContext": "costa-frames",
+  "scopes": [
+    "management-api:assets:write",
+    "management-api:catalog:read"
+  ],
+  "audiences": ["edcv"]
+}
+```
+
+A request for a scope that is not in the mapping is refused. The mapping is the ceiling. A well-behaved workload asks for less than its ceiling: one call, one token, with the narrow scope that this call needs.
+
+Scopes have the form `api:resource:action`, for example `management-api:assets:read`.
+
+- The actions are `read`, `write`, and `admin`. A stronger action includes the weaker ones.
+- Without a resource, a scope covers the whole API: `management-api:read` allows every read.
+- A token without an `admin` scope reaches only the participant context in its subject. An `admin` scope lifts that limit. Give it to operator tools only.
+
+The APIs are `management-api` for the connector, `identity-api` for the Identity Hub, `issuer-admin-api` for the Issuer Service, and `tenant-manager-api` and `provision-manager-api` for the Connector Fabric Manager.
+
+The chart also defines short names such as `read`, `write`, and `admin`, which expand to several API scopes at once. Its seed jobs use them. Prefer the narrow scopes for everything that you write yourself.
+
+Requests that arrive through the gateway are checked twice: at the gateway and again by the service.
+
+## Who gets which mapping
+
+| Workload | Acts for | Typical scopes |
+|---|---|---|
+| Job that applies the profile | The issuer context | `management-api:admin`, write scopes of `issuer-admin-api`, `tenant-manager-api:admin` |
+| Danube Cloud's portal | A subject of its own for provisioning, and each participant context for the credential request | `tenant-manager-api:write`, `identity-api:credentials:write` |
+| Onboarding application of the association | The issuer context | `issuer-admin-api:holders:write` and `issuer-admin-api:credentials:write` |
+| Connector, Identity Hub, Siglet | Every participant context | Access to that participant's keys, and the signaling between connector and Siglet |
+| Use-case application | Every participant context that it serves | Narrow scopes of `management-api`, and access to Siglet's tokens |
+
+The first three have fixed mappings, which you create when you apply the profile. Mappings for a participant context are created during provisioning, which lectures 9 and 10 cover.
+
+jwtlet's management API, which creates mappings, is reachable only inside the cluster and accepts only the service accounts that its configuration lists. Keep that list short. Whoever can write mappings can give any workload any access.
+
+## Key takeaways
+
+- People sign in to applications. Platform APIs are called by workloads, never with a person's token.
+- A workload exchanges its Kubernetes service account token at jwtlet for a short-lived token that is bound to one participant context.
+- A mapping is the ceiling of what a workload can ask for. A call should request only the narrow scope that it needs.
+- Fixed mappings belong to the profile. Mappings per participant are created during provisioning.
+
+## Go deeper
+
+- [RFC 8693: OAuth 2.0 Token Exchange](https://datatracker.ietf.org/doc/html/rfc8693) is the standard behind the exchange.
+- [jwtlet: Security architecture](https://github.com/eclipse-cfm/jwtlet/blob/main/docs/security-architecture.md) describes mappings, scope expansion, and the issued token.
+- [JAD: Service-to-service authentication](https://github.com/eclipse-dataspace-hub/jad/blob/main/docs/token-exchange.md) walks through the exchange on a running platform and lists the scopes of every endpoint.
+- [EDC documentation: Management API](https://eclipse-edc.github.io/documentation/for-adopters/control-plane/management-api/) explains scopes, the admin scope, and ownership of resources.
+- [Build a Dataspace Application: Your starting point](../../application/02-your-starting-point/) shows the same access from the application developer's side.

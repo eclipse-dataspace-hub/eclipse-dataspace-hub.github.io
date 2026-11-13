@@ -1,0 +1,149 @@
+---
+title: Overview
+description: Choose a learning path, try a demonstrator, or go straight to the source documentation.
+template: splash
+hero:
+  title: Eclipse Dataspace Hub
+  tagline: The starting point for Eclipse dataspace technologies. See how the parts fit, follow a guided path, and find the right documentation.
+  image:
+    light: ../../assets/brand/mark.svg
+    dark: ../../assets/brand/mark-reversed.svg
+    alt: ''
+  actions:
+    - text: Start with a use case
+      link: use-case/
+      icon: right-arrow
+      variant: primary
+    - text: Try a demonstrator
+      link: '#try-a-demonstrator'
+      variant: secondary
+prev: false
+next: false
+---
+
+import CapabilityOverview from '../../components/CapabilityOverview.astro';
+import RouteCard from '../../components/RouteCard.astro';
+import RouteGrid from '../../components/RouteGrid.astro';
+
+The **Eclipse Dataspace Hub** is for developers, platform teams, and anyone planning a dataspace use case. Use it to explore the technology, connect your systems, or run a platform. You do not need to contribute to the Eclipse projects.
+
+> **New to dataspaces?** Start with [A Dataspace Use Case](use-case/) or the [IDSA Rulebook](https://kb.internationaldataspaces.org/external/rulebook/001_Introduction/).
+
+## Component landscape
+
+A dataspace needs a few services that work together under shared rules. Select a box to see what it does and where to learn more.
+
+<CapabilityOverview />
+
+These services can be set up in different ways. An organization can run them itself, share them with others, or use a provider. The two demonstrators below show how.
+
+## Try a demonstrator
+
+A demonstrator is a small dataspace that you can run yourself. JAD and MVD are two separate examples, made for learning and not for production. Pick the one that matches what you want to learn, or see [Demonstrators](demonstrators/) for a comparison.
+
+<RouteGrid>
+  <RouteCard
+    title="JAD - Just Another Demonstrator"
+    href="https://github.com/eclipse-dataspace-hub/jad"
+    cta="Try JAD"
+    kicker="Managed-platform demonstrator"
+  >
+    One shared platform for many participants. Set up participants and share a certificate between them.
+  </RouteCard>
+  <RouteCard
+    title="MVD - Minimum Viable Dataspace"
+    href="https://github.com/eclipse-dataspace-hub/MinimumViableDataspace"
+    cta="Try MVD"
+    kicker="End-to-end data sharing"
+  >
+    Two participants, each with its own connector. Follow an exchange from credentials to data transfer.
+  </RouteCard>
+</RouteGrid>
+
+## Guided adoption paths
+
+Pick the path that fits your task. If you want the whole picture first, start with the use case.
+
+<RouteGrid>
+  <RouteCard
+    title="A Dataspace Use Case"
+    href="use-case/"
+    cta="Follow the use-case path"
+    kicker="Use case"
+    compact
+  >
+    Follow one data exchange between companies, from the business need to the data transfer.
+  </RouteCard>
+  <RouteCard
+    title="Set Up a Dataspace Platform"
+    href="platform-setup/"
+    cta="Follow the platform path"
+    kicker="Platform operations"
+    compact
+  >
+    Deploy and run the services that participants need, and set up new participants.
+  </RouteCard>
+  <RouteCard
+    title="Build a Dataspace Application"
+    href="application/"
+    cta="Follow the application path"
+    kicker="Application integration"
+    compact
+  >
+    Connect your applications to a dataspace: publish offers, agree on contracts, and transfer data.
+  </RouteCard>
+  <RouteCard
+    title="Design Trust, Credentials, and Dataspace Profiles"
+    href="trust-and-profiles/"
+    cta="Follow the trust path"
+    kicker="Trust and interoperability"
+    compact
+  >
+    Define the rules of a dataspace: roles, credentials, onboarding, and policies.
+  </RouteCard>
+</RouteGrid>
+
+## Documentation and source repositories
+
+**Concepts and rules.** The [IDSA Rulebook](https://kb.internationaldataspaces.org/external/rulebook/001_Introduction/) explains what a dataspace is and how to create, run, and join one.
+
+**Implementation.** The [EDC documentation for adopters](https://eclipse-edc.github.io/documentation/for-adopters/) helps you evaluate EDC and plan a setup. The Hub gives orientation. For APIs, configuration, releases, and production use, rely on the documentation and repositories of each project.
+
+**Specifications.** For protocol details, read the [Dataspace Protocol (DSP)](https://eclipse-dataspace-protocol-base.github.io/DataspaceProtocol/), the [Decentralized Claims Protocol (DCP)](https://eclipse-dataspace-dcp.github.io/decentralized-claims-protocol/), and [Data Plane Signaling](https://github.com/eclipse-dataplane-signaling/dataplane-signaling).
+
+## Join the community
+
+The Eclipse Dataspace Hub is a community project for learning material, demonstrators, and samples. Fixes we find along the way go to the projects they belong to.
+
+<RouteGrid columns={4}>
+  <RouteCard
+    title="Chat on Discord"
+    href="https://discord.gg/n4sD9qtjMQ"
+    cta="Join #dataspace-hub"
+    kicker="Ask and discuss"
+    compact
+  >
+    Ask about the Hub, the learning paths, and the demonstrators.
+  </RouteCard>
+  <RouteCard
+    title="Eclipse Dataspace Components"
+    href="https://eclipse-edc.github.io/"
+    cta="Visit the EDC website"
+    kicker="Components"
+    compact
+  >
+    Documentation, blog, and community of the EDC project.
+  </RouteCard>
+  <RouteCard
+    title="Eclipse Dataspace Working Group"
+    href="https://dataspace.eclipse.org/"
+    cta="Visit the working group"
+    kicker="Working group"
+    compact
+  >
+    The members, projects, and events around Eclipse dataspace technologies.
+  </RouteCard>
+  <RouteCard title="Contribute" href="community/" cta="See how to take part" kicker="Get involved" compact>
+    Report a gap, improve a lecture, or add a sample.
+  </RouteCard>
+</RouteGrid>
