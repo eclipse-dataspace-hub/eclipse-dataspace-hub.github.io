@@ -1,0 +1,31 @@
+---
+/**
+ * Replaces Starlight's social icons so that they open in a new tab, like
+ * every other link that leaves the site.
+ */
+import config from 'virtual:starlight/user-config';
+import { Icon } from '@astrojs/starlight/components';
+
+const links = config.social || [];
+---
+
+{
+  links.map(({ label, href, icon }) => (
+    <a href={href} rel="me noopener noreferrer" target="_blank" class="sl-flex">
+      <span class="sr-only">{label} (opens in a new tab)</span>
+      <Icon name={icon} />
+    </a>
+  ))
+}
+
+<style>
+  a {
+    color: var(--sl-color-text-accent);
+    padding: 0.5em;
+    margin: -0.5em;
+  }
+
+  a:hover {
+    color: var(--sl-color-white);
+  }
+</style>

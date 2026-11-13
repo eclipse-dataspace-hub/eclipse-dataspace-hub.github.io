@@ -1,0 +1,132 @@
+---
+title: "Transfer data"
+description: "How an application starts a transfer under an agreement, what a started transfer means for an API, and how it obtains the access token and makes its first call."
+---
+
+import StateFlow from '../../../components/diagrams/StateFlow.astro';
+
+Lindner's supplier certificate service context holds a contract agreement for Costa's supplier certificates API. An agreement is a permission. To use it, the service starts a transfer, which the use-case path described in two parts: the connectors give permission, and the data planes deliver. This lecture shows both parts from the application's side.
+
+:::note[In this lecture]
+- The transfer request.
+- What `STARTED` means when the data is an API.
+- How to get the access token and make the first call.
+- How a transfer ends.
+:::
+
+## Request the transfer
+
+```http
+POST /api/management/v5/participants/lindner-bikes/transferprocesses HTTP/1.1
+Host: danube-cloud.example
+Authorization: Bearer <access token>
+Content-Type: application/json
+```
+
+```json
+{
+  "@context": ["https://w3id.org/edc/connector/management/v2"],
+  "@type": "TransferRequest",
+  "counterPartyAddress": "https://danube-cloud.example/api/dsp/costa-frames/bike-dataspace",
+  "profile": "bike-dataspace",
+  "contractId": "b7d4e2a1-93c6-4f0b-8a5e-2c1d7f6e9b30",
+  "transferType": "https://w3id.org/dspace-sig/profile/http-pull"
+}
+```
+
+`contractId` is the agreement ID from the negotiation. `transferType` names how the data will travel. This one stands for a **pull over HTTP**: the provider exposes an endpoint, and the consumer calls it. The call needs the scope `management-api:transfers:write`.
+
+The response contains the ID of a **transfer process**. Keep it. The same ID identifies the data flow when you ask for its token.
+
+## What STARTED means
+
+Like a negotiation, a transfer process moves through states. Read them with `GET` on `/transferprocesses/{id}/state`.
+
+<StateFlow
+  states={['REQUESTED', 'STARTED', 'COMPLETED']}
+  transitions={[
+    { from: 'STARTED', to: 'SUSPENDED', both: true },
+    { from: ['REQUESTED', 'STARTED', 'SUSPENDED'], to: 'TERMINATED' },
+  ]}
+  finals={['COMPLETED', 'TERMINATED']}
+  caption="The states of a transfer process that matter to an application. A transfer for an API stays STARTED."
+/>
+
+When Costa's connector receives the request, it checks the agreement and its policy again and instructs its data plane. The transfer then reaches `STARTED` on both sides.
+
+For a file, `STARTED` is the moment to download, and the transfer completes afterwards. An API is different. Its data has no end, so the transfer stays `STARTED`, and your application calls the API as often as it needs under this one transfer. A transfer for an API rarely reaches `COMPLETED`. It ends when one side terminates it.
+
+Do not start a transfer per call. One started transfer per counterparty and API is the normal state. It serves every call until it is replaced, and the next lecture covers when that happens.
+
+## Get the token and call
+
+A started transfer has an access token. Costa's side issued it, and Siglet on your platform keeps it for you. Ask the Siglet token API for it, with your participant context ID and the transfer process ID in the path.
+
+```http
+GET /api/siglet/tokens/lindner-bikes/7c2a9f4e-51b8-4d0c-a2f3-9e6b1c8d4a70 HTTP/1.1
+Host: danube-cloud.example
+Authorization: Bearer <access token for lindner-bikes>
+```
+
+```json
+{
+  "token": "eyJhbGciOiJFZERTQSIs…",
+  "endpoint": "https://supplier-certificates.danube-cloud.example/api/v1"
+}
+```
+
+`endpoint` is where the provider's application listens. `token` is the access token for this one flow. Now make the call that the use case defines, here a list of the certificates that Costa shares with Lindner.
+
+```http
+GET /api/v1/certificates HTTP/1.1
+Host: supplier-certificates.danube-cloud.example
+Authorization: Bearer <token from Siglet>
+```
+
+The data goes straight from Costa's context of the supplier certificate service to Lindner's. No connector sees it.
+
+Reuse the token for further calls. It is short-lived. When a call is rejected with `401`, ask Siglet again. Siglet then renews the token with the provider's side, as long as the transfer is started. Lecture 10 looks inside the token.
+
+## End, suspend, resume
+
+Either side can end a transfer with a `POST` to `/transferprocesses/{id}/terminate`.
+
+```json
+{
+  "@context": ["https://w3id.org/edc/connector/management/v2"],
+  "@type": "TerminateTransfer",
+  "reason": "Supplier removed from the partner list"
+}
+```
+
+Termination is final. The provider's side revokes the token, and your side discards it. The agreement remains. If nothing else has changed, you can start a new transfer under the same agreement without negotiating again.
+
+A transfer can also be suspended and resumed, with `/suspend` and `/resume`. Suspending revokes the token as well.
+
+You will see transfers end that you did not end yourself:
+
+- the counterparty terminated it, for example because it removed you as a partner;
+- the provider retired the agreement, and its connector terminated the transfers that ran under it;
+- an operator intervened.
+
+Treat a terminated transfer as normal. Mark what depended on it as stale and decide whether to start again. The next lecture turns this into a pattern.
+
+## Other transfer types
+
+A pull of an HTTP API is one way to move data. A provider can also push data to a destination that the consumer names, and a transfer can carry files or a stream. The transfer types a provider supports appear in the `distribution` of its catalog. This path follows the pull of an API, because use-case applications need a conversation and not a delivery. Lecture 9 explains what stands behind a transfer type.
+
+## Key takeaways
+
+- A transfer request names the agreement and a transfer type. Its ID identifies the data flow.
+- For an API, a transfer stays `STARTED`, and one transfer serves many calls.
+- The Siglet token API returns the access token and the endpoint of a started flow.
+- Terminating a transfer revokes its token. The agreement stays valid for a new transfer.
+- Transfers end for reasons outside your application, so plan for it.
+
+## Go deeper
+
+- [Dataspace Protocol specification](https://eclipse-dataspace-protocol-base.github.io/DataspaceProtocol/) defines the transfer process protocol and its states.
+- [EDC documentation: Control plane](https://eclipse-edc.github.io/documentation/for-adopters/control-plane/) describes transfer processes, the pull and push flow types, and transfers without a defined end.
+- [Siglet documentation](https://github.com/eclipse-dataplane-core/siglet/blob/main/docs/siglet.md) describes the token API and the renewal of tokens.
+- [A Dataspace Use Case: Getting the data](../../use-case/07-getting-the-data/) tells the two parts of a transfer as a story.
+- [Channels](../08-channels/) manages agreement and transfer as one object.

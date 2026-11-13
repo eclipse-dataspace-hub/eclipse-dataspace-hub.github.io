@@ -1,0 +1,147 @@
+---
+/**
+ * One or more lanes of boxes joined by labelled arrows.
+ *
+ *   <Chain
+ *     rows={[
+ *       {
+ *         label: 'Control path',
+ *         nodes: ['Application', { title: 'Connector', text: 'your own' }, 'Data plane'],
+ *         links: ['Management API', { label: 'Data Plane Signaling', both: true }],
+ *       },
+ *     ]}
+ *     caption="…"
+ *   />
+ *
+ * `links[i]` joins `nodes[i]` to `nodes[i + 1]`. Lanes run left to right and
+ * turn top to bottom on narrow screens.
+ */
+type Node = string | { title: string; text?: string };
+type Link = string | { label?: string; both?: boolean };
+
+interface Row {
+  label?: string;
+  nodes: Node[];
+  links?: Link[];
+}
+
+interface Props {
+  rows: Row[];
+  caption?: string;
+}
+
+const { rows, caption } = Astro.props;
+const node = (value: Node) => (typeof value === 'string' ? { title: value } : value);
+const link = (value: Link | undefined) =>
+  value === undefined ? {} : typeof value === 'string' ? { label: value } : value;
+---
+
+<figure class="hub-figure not-content chain">
+  <div class="rows">
+    {
+      rows.map((row) => (
+        <div class="row">
+          {row.label && <p class="hub-label">{row.label}</p>}
+          <div class="lane">
+            {row.nodes.map((value, index) => {
+              const current = node(value);
+              const next = index < row.nodes.length - 1 ? link(row.links?.[index]) : null;
+              return (
+                <>
+                  <div class="hub-node">
+                    <strong>{current.title}</strong>
+                    {current.text && <span>{current.text}</span>}
+                  </div>
+                  {next && (
+                    <div class="link">
+                      {next.label && <span class="link-label">{next.label}</span>}
+                      <span class:list={['hub-arrow', 'across', { 'hub-arrow--both': next.both }]} aria-hidden="true" />
+                      <span
+                        class:list={['hub-arrow', 'hub-arrow--down', 'down', { 'hub-arrow--both': next.both }]}
+                        aria-hidden="true"
+                      />
+                    </div>
+                  )}
+                </>
+              );
+            })}
+          </div>
+        </div>
+      ))
+    }
+  </div>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .rows {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .row {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .lane {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .hub-node {
+    flex: 1 1 0;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .link {
+    display: grid;
+    flex: 1 1 0;
+    align-content: center;
+    gap: 0.3rem;
+    min-width: 3.5rem;
+  }
+
+  .link-label {
+    color: var(--sl-color-gray-2);
+    font-size: 0.72rem;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  .down {
+    display: none;
+  }
+
+  /* Narrow: top to bottom. */
+  @container (max-width: 36rem) {
+    .lane {
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .link {
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      min-height: 1.6rem;
+    }
+
+    .link-label {
+      order: 2;
+      text-align: start;
+    }
+
+    .across {
+      display: none;
+    }
+
+    .down {
+      display: block;
+      margin-inline: 1.2rem 0;
+    }
+  }
+</style>

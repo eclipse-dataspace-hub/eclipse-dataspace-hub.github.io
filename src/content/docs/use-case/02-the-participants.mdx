@@ -1,0 +1,71 @@
+---
+title: "The participants"
+description: "The companies in the Bike Dataspace and the three kinds of responsibility in every dataspace: setting the rules, running the platform, and sharing data."
+---
+
+import Flow from '../../../components/diagrams/Flow.astro';
+
+A dataspace is a group of organizations that agree on rules for sharing data and then share it directly with each other. Before looking at how that works, meet the organizations in the story.
+
+:::note[In this lecture]
+- The companies in the Bike Dataspace.
+- The three kinds of responsibility that every dataspace has.
+- Why "provider" and "consumer" are roles and not types of company.
+:::
+
+## The cast
+
+| Organization | What it does | Its part in the story |
+|---|---|---|
+| **Costa Frames** | Makes aluminium bicycle frames. A mid-sized supplier with thirty customers. | Shares its company certificates. |
+| **Brandt Batteries** | Makes battery packs for e-bikes. A larger company with its own IT department. | Shares certificates and battery data. Runs its own software. |
+| **Lindner Bikes** | Builds e-bikes from parts made by about two hundred suppliers. | Needs supplier certificates and battery data. |
+| **Hansen Recycling** | Takes back and recycles e-bike batteries. | Needs detailed battery data. |
+| **Bike Industry Association** | The trade association of the industry. | Sets the rules of the dataspace and admits members. |
+| **Danube Cloud** | A cloud provider. | Runs the technical platform for most members. |
+
+## Three kinds of responsibility
+
+The six organizations do three different jobs. Keeping them apart is the most useful habit when you think about any dataspace.
+
+**Setting the rules.** The Bike Industry Association decides who may join, what members must prove, which technical standards apply, and which terms everyone accepts. In dataspace vocabulary this function is the **dataspace governance authority**. The association also confirms membership by issuing a digital credential to each member. It does not store or forward anyone's data.
+
+**Running the platform.** Danube Cloud operates the software that members need to take part. Most members are too small to run this themselves, so they use Danube Cloud as a service. Danube Cloud is a **platform operator**. It follows the rules that the association sets, and it has no say in who shares what with whom.
+
+**Sharing data.** Costa, Brandt, Lindner, and Hansen are **participants**. Each one decides what it offers, under which conditions, and what it requests from others.
+
+One organization can hold more than one of these responsibilities. A large manufacturer might run its own platform. An association might operate the platform itself. The responsibilities stay distinct even then, and each later path in this hub addresses one of them.
+
+<Flow
+  steps={[
+    { actor: 'Bike Industry Association', text: 'sets rules, admits members, issues credentials' },
+    { actor: 'Danube Cloud', text: 'runs the platform that members use' },
+    { actor: 'Costa · Brandt · Lindner · Hansen', text: 'share data directly with each other' },
+  ]}
+  caption="Three kinds of responsibility: setting the rules, running the platform, and sharing data."
+/>
+
+## Provider and consumer are roles
+
+When Costa offers a certificate and Lindner requests it, Costa acts as **provider** and Lindner as **consumer**. These words describe one exchange. They do not describe the companies.
+
+Lindner consumes certificates from its suppliers. It also holds certificates of its own, and its customers want to see them. In that exchange Lindner is the provider. Every participant has the same technical capabilities and can act in both roles. The dataspace has no built-in hierarchy of data owners and data users.
+
+## Not everyone uses the shared platform
+
+Brandt Batteries chooses to run the participant software in its own data centre. It still follows the same rules, holds the same kind of membership credential, and speaks the same protocols as everyone else. Costa cannot tell whether Lindner or Brandt is hosted by Danube Cloud, and does not need to know.
+
+This is a deliberate property. A dataspace is defined by its rules and protocols. It is not defined by one product or one hosting provider.
+
+## Key takeaways
+
+- A dataspace has three kinds of responsibility: setting the rules, running the platform, and sharing data.
+- The governance authority sets the rules. In the Bike Dataspace it also admits members and confirms membership. It does not hold the data.
+- Provider and consumer are roles in a single exchange. Every participant can be both.
+- Members can use a shared platform or run their own software and still work together.
+
+## Go deeper
+
+- [IDSA Rulebook: Roles](https://kb.internationaldataspaces.org/external/rulebook/005_Roles/) defines the participant role.
+- [IDSA Rulebook: Dataspace governance authority](https://kb.internationaldataspaces.org/external/rulebook/006_DSGA/) describes what the governance function does and does not do.
+- [Set Up a Dataspace Platform: Operating models](../../platform-setup/01-operating-models/) looks at the platform operator's choices in detail.

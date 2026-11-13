@@ -1,0 +1,111 @@
+---
+/**
+ * Layers of a system, top to bottom.
+ *
+ *   <LayerStack
+ *     layers={[
+ *       { label: 'People and applications', rows: [['Portal', 'Onboarding application']], boundary: 'Gateway' },
+ *       { label: 'Runtime', rows: [['Connector', 'Identity Hub'], ['Tenant Manager']] },
+ *     ]}
+ *     caption="…"
+ *   />
+ *
+ * Each layer has one or more rows of items. `boundary` draws a named line
+ * below the layer, for something every request passes through.
+ */
+interface Layer {
+  label: string;
+  rows: string[][];
+  boundary?: string;
+}
+
+interface Props {
+  layers: Layer[];
+  caption?: string;
+}
+
+const { layers, caption } = Astro.props;
+---
+
+<figure class="hub-figure not-content layer-stack">
+  <div class="layers">
+    {
+      layers.map((layer) => (
+        <>
+          <section class="layer">
+            <p class="hub-label">{layer.label}</p>
+            {layer.rows.map((row) => (
+              <ul role="list">
+                {row.map((item) => (
+                  <li class="hub-node">
+                    <strong>{item}</strong>
+                  </li>
+                ))}
+              </ul>
+            ))}
+          </section>
+          {layer.boundary && (
+            <p class="boundary">
+              <span>{layer.boundary}</span>
+            </p>
+          )}
+        </>
+      ))
+    }
+  </div>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .layers {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .layer {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.6rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.4rem;
+    background: color-mix(in srgb, var(--sl-color-bg) 60%, transparent);
+  }
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .hub-node {
+    flex: 1 1 8rem;
+    justify-items: center;
+    padding-block: 0.5rem;
+    text-align: center;
+  }
+
+  .boundary {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0;
+    color: var(--sl-color-text-accent);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .boundary::before,
+  .boundary::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--sl-color-accent);
+  }
+</style>

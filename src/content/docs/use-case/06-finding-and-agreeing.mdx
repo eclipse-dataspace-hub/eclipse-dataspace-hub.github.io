@@ -1,0 +1,86 @@
+---
+title: "Finding and agreeing"
+description: "How Lindner Bikes discovers Costa's offer, proves its membership, and concludes a contract, all between the two companies' connectors."
+---
+
+import Sequence from '../../../components/diagrams/Sequence.astro';
+
+Lindner Bikes is reviewing its suppliers and needs Costa's current certificates. Lindner is a member of the Bike Dataspace and is hosted by Danube Cloud, like Costa. Its supplier management system starts the exchange.
+
+:::note[In this lecture]
+- How a consumer asks a provider for its catalog.
+- How membership is proven without anyone calling the association.
+- What a contract negotiation produces.
+:::
+
+## Asking for the catalog
+
+Lindner knows Costa as a supplier and knows Costa's DID. From the DID document, Lindner's connector learns where Costa's connector can be reached. It sends a **catalog request**: a question asking what Costa offers.
+
+Costa's connector does not answer anonymous questions. Before it replies, it wants to know who is asking.
+
+## Proving membership
+
+The proof happens between the two Credential Services, automatically and in a few hundred milliseconds:
+
+1. Lindner's connector attaches a short-lived token to the request. The token is signed with Lindner's key and says: "I am Lindner, and you may ask my Credential Service about my membership."
+2. Costa's connector verifies the signature against Lindner's DID document.
+3. Costa's connector asks Lindner's Credential Service for the membership credential.
+4. Lindner's Credential Service presents the credential.
+5. Costa's connector checks that the Bike Industry Association signed it, that it belongs to Lindner, and that it is still valid.
+
+Nobody contacts the association during this exchange. Costa relies on the association's signature, which it can verify by itself.
+
+<Sequence
+  actors={{ lcp: 'Lindner connector', lcs: 'Lindner Credential Service', kcp: 'Costa connector' }}
+  steps={[
+    { from: 'lcp', to: 'kcp', label: 'Catalog request with a token' },
+    { from: 'kcp', to: 'lcs', label: 'Asks for the membership credential' },
+    { from: 'lcs', to: 'kcp', label: 'Signed presentation' },
+    { at: 'kcp', label: 'Checks issuer, holder, and validity' },
+    { from: 'kcp', to: 'lcp', label: 'Catalog' },
+  ]}
+  caption="Proof of membership during a catalog request. The association is not contacted."
+/>
+
+## The catalog is personal
+
+Costa's connector now compares Lindner's credentials with the access policy of each offer. It returns the offers that Lindner is eligible for.
+
+Two consumers can therefore receive different catalogs from the same provider. A company that is not a member receives no offers and learns nothing about what Costa holds.
+
+Lindner finds the offer "Company certificates of Costa Frames" together with its conditions.
+
+## Negotiating the contract
+
+Lindner wants the certificates and accepts the conditions. Its connector sends a **contract request** for the offer. Costa's connector checks Lindner's credentials again, this time against the contract policy, and agrees. Both sides confirm.
+
+The result is a **contract agreement**. It records:
+
+- which data it covers;
+- which provider and which consumer concluded it;
+- under which policy;
+- when.
+
+Both connectors store the agreement. If a question comes up later about what was shared and on which terms, both companies hold the same record.
+
+For a standard offer such as this one, the negotiation is automatic and finishes in seconds. A provider can also require that a person approves each request before the agreement is concluded. That is the provider's choice, per offer.
+
+## What did not happen
+
+Lindner did not register in a Costa portal. Nobody at Costa received an email or created an account. Lindner did not need a personal contact at Costa, and Costa did not need to check Lindner's legitimacy by hand. The membership credential covered that.
+
+Lindner has an agreement now. It does not have the certificates yet. The agreement is the permission to fetch them, and the next lecture covers how.
+
+## Key takeaways
+
+- A consumer asks a provider directly for its catalog. The provider answers according to what the consumer can prove.
+- Credentials are presented from Credential Service to connector. The issuer is not involved at that moment.
+- A contract negotiation ends in an agreement that both sides store.
+- Routine negotiations are automatic. A provider can add manual approval where it wants it.
+
+## Go deeper
+
+- [Dataspace Protocol specification](https://eclipse-dataspace-protocol-base.github.io/DataspaceProtocol/) defines the catalog and contract negotiation protocols.
+- [Decentralized Claims Protocol specification](https://eclipse-dataspace-dcp.github.io/decentralized-claims-protocol/) defines how credentials are presented and verified.
+- [Build a Dataspace Application: Discover and negotiate](../../application/06-discover-and-negotiate/) shows the requests an application sends.

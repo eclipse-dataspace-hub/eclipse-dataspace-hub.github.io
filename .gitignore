@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Astro/Starlight build output
+.astro/
+dist/
+
+# Package manager caches
+.npm/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS/editor files
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

@@ -1,0 +1,95 @@
+---
+title: "What you are building"
+description: "The two example applications of this path, what the platform already does for them, and what a use-case application has to do itself."
+---
+
+import Exchange from '../../../components/diagrams/Exchange.astro';
+
+Danube Cloud hosts the connectors of Costa Frames, Lindner Bikes, and many other members of the Bike Dataspace. These members do not want to work with a connector. They want their customers to get current certificates, and they want their suppliers' certificates to arrive in the systems they already use. Danube Cloud therefore builds an application on top of its platform: the supplier certificate service. In this path you are on the team that builds it.
+
+:::note[In this lecture]
+- The two applications that this path follows.
+- What the platform does for you and what remains your work.
+- Why a use-case application takes the place of the data plane.
+:::
+
+## Two applications
+
+| | Supplier certificate service | Battery data service |
+|---|---|---|
+| **Use case** | Supplier certificates | Battery passport data |
+| **Built and run by** | Danube Cloud, for its members | Brandt Batteries, for itself |
+| **Tenants** | Many. One context per member. | One |
+| **Connector** | The members' contexts on the Danube Cloud platform | Brandt's own connector |
+| **Systems around it** | Costa's document store feeds it. Lindner's supplier management system reads from it. Staff use its portal. | Brandt's product database feeds it. |
+
+Most of the path follows the supplier certificate service. Lecture 15 returns to the battery data service and shows what a second use case reuses.
+
+## What the platform already does
+
+A dataspace application starts with a lot in place. The following tasks are done by platform services, and you call them through their APIs.
+
+| Task | Done by |
+|---|---|
+| Hold the participant's keys and credentials and present them | Credential Service |
+| Prove to a counterparty what the dataspace requires, such as membership, and check the counterparty's proof | Connector and Credential Service |
+| Publish offers, answer catalog requests, negotiate contracts, manage transfers | Connector |
+| Issue the access token for an agreed data flow | Siglet, the platform's token service for data planes |
+
+Your application never handles a verifiable credential and never signs a protocol message. When a call from another company reaches your code, the platform has already established who is calling and that a contract exists.
+
+## What remains yours
+
+The connector settles who may talk to whom about which API. Everything after that is the use case itself.
+
+- **The use-case API.** How a customer asks for a certificate, how the supplier answers, and how a renewed certificate is announced.
+- **Decisions.** Which customer gets which certificate, by rule or after a person approved.
+- **Records.** Certificates and their versions, requests, and what was shared with whom under which agreement.
+- **Integration.** The connection to the document store on one side and to supplier management on the other.
+- **Operations.** Retries, events, monitoring, and recovery after a failure.
+
+This is more than three API calls, and it is where most of your time goes.
+
+## Where the application sits
+
+The use-case path names four building blocks per participant: connector, Credential Service, data plane, and business systems. The data plane is the block that serves the data once a contract exists.
+
+For a use case that exchanges data through an API, the data plane has two parts. Siglet does the part that every use case needs. It takes instructions from the connector and issues an access token for each agreed flow. Your application does the part that is specific to the use case. It serves the API and checks the token on every call.
+
+<Exchange
+  left={{ title: 'Costa Frames', role: 'Provider' }}
+  right={{ title: 'Lindner Bikes', role: 'Consumer' }}
+  rows={[
+    { left: 'Connector', right: 'Connector', link: { label: 'offers, contracts', direction: 'both' } },
+    { left: 'Siglet', right: 'Siglet', link: { label: 'access token', direction: 'right' } },
+    {
+      left: { title: 'Supplier certificate service', text: "Costa's context" },
+      right: { title: 'Supplier certificate service', text: "Lindner's context" },
+      link: { label: 'supplier certificates API', direction: 'both' },
+    },
+    { left: 'Document store', right: 'Supplier management' },
+  ]}
+  caption="The platform provides connector and Siglet. The supplier certificate service takes the place of the data plane and connects the business systems."
+/>
+
+The supplier certificate service is one deployment. The picture shows it twice because it acts separately for each member. Costa's certificates and Lindner's requests are kept apart as strictly as if two companies ran two installations.
+
+## One application, both roles
+
+A **use-case application** implements one use case on both sides. The supplier certificate service lets Costa provide certificates and lets Lindner request them. It also lets Lindner provide its own certificates to its customers, and it lets Costa collect certificates from its aluminium suppliers.
+
+This follows from the dataspace itself, where provider and consumer are roles in one exchange and not types of company. Build the application so that every tenant can act in both roles from the first day. The two sides share most parts: the client for the connector, the token handling, the store, and the log.
+
+## Key takeaways
+
+- The platform provides identity, proof of credentials, contracts, and access tokens. You call these services and do not rebuild them.
+- A use-case application implements the use-case API, the decisions, the records, and the operations around them.
+- For an API use case, Siglet and your application together are the data plane.
+- One use-case application serves both roles, because every participant can provide and consume.
+
+## Go deeper
+
+- [EDC documentation: Data plane](https://eclipse-edc.github.io/documentation/for-adopters/data-plane/) explains what a data plane is and that any application implementing Data Plane Signaling can be one.
+- [IDSA Rulebook: Planes](https://kb.internationaldataspaces.org/external/rulebook/010_Planes/) explains the split between control plane and data plane.
+- [A Dataspace Use Case: How a dataspace works](../../use-case/03-how-a-dataspace-works/) introduces the building blocks without code.
+- [Set Up a Dataspace Platform: Data planes and use-case applications](../../platform-setup/10-data-planes-and-applications/) shows what an operator provides to an application like this one.

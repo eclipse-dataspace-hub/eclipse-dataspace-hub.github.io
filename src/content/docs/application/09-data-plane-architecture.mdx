@@ -1,0 +1,92 @@
+---
+title: "Data plane architecture"
+description: "How a connector instructs a data plane through Data Plane Signaling, the shapes a data plane can take, and where the endpoint of a use-case application comes from."
+---
+
+import Sequence from '../../../components/diagrams/Sequence.astro';
+
+So far the supplier certificate service has treated the access token as something that appears when a transfer starts. A new developer on the team asks where the token comes from, who told Costa's side to issue it, and how Lindner's call found the supplier certificate service. The answers lie in the split between control plane and data plane.
+
+:::note[In this lecture]
+- Control plane, data plane, and the protocol between them.
+- The shapes a data plane can take.
+- Where the endpoint of your API comes from, and who registers the data plane.
+:::
+
+## Control plane and data plane
+
+In this lecture the connector is called by its role: the **control plane**. It handles catalogs, contracts, and the state of transfers, in the same way for every kind of data. The **data plane** is the component that serves or moves the data once a transfer is allowed.
+
+The connector project does not include a data plane. Any software that implements Data Plane Signaling can be one.
+
+## Data Plane Signaling
+
+**Data Plane Signaling** (DPS) is the protocol between a control plane and its data planes.
+
+| Direction | Messages | Purpose |
+|---|---|---|
+| Control plane to data plane | prepare, start, suspend, resume, terminate | Say what to do for one data flow |
+| Data plane to control plane | prepared, started, completed, errored | Report progress |
+
+A **data flow** is the data plane's view of a transfer process. For a pull, the provider's data plane answers the start message with a **data address**: the endpoint for the data and the credentials to use there. The control planes do not interpret the data address. They pass it on through the Dataspace Protocol, and the consumer's control plane hands it to its own data plane.
+
+On the Danube Cloud platform, the data plane that speaks DPS is Siglet.
+
+<Sequence
+  actors={{
+    cs: 'Consumer Siglet',
+    cc: 'Consumer connector',
+    pc: 'Provider connector',
+    ps: 'Provider Siglet',
+  }}
+  steps={[
+    { from: 'cc', to: 'cs', label: 'Prepare' },
+    { from: 'cc', to: 'pc', label: 'Transfer request' },
+    { from: 'pc', to: 'ps', label: 'Start' },
+    { at: 'ps', label: 'Issues the access token' },
+    { from: 'ps', to: 'pc', label: 'Data address with endpoint and token' },
+    { from: 'pc', to: 'cc', label: 'Transfer start with the data address' },
+    { from: 'cc', to: 'cs', label: 'Started, with the data address' },
+    { at: 'cs', label: 'Keeps the token for the application' },
+  ]}
+  caption="Data Plane Signaling for a pull. The connectors pass the data address on. Siglet and the applications use it."
+/>
+
+Costa and Lindner are hosted on the same platform, so one Siglet deployment plays both parts, with a separate context for each member. The messages are the same as between two companies with their own installations.
+
+## Shapes of a data plane
+
+| Shape | How it works | Fits |
+|---|---|---|
+| **A token service in front of your API** | Siglet implements the signaling and issues the tokens. Your application serves the API and checks the tokens. | Use cases that are a conversation: requests, answers, notices |
+| **A data plane that moves data itself** | Built with a data plane SDK for Java, Go, or Rust. It implements the signaling and reads, writes, or streams the data. | Files, bulk data, streams, and pushes into a destination |
+
+A use case can combine both: an API for the conversation and a moving data plane for large payloads. This path follows the first shape. The supplier certificate service knows the use case and leaves the signaling to Siglet.
+
+## Where your endpoint comes from
+
+Lecture 4 created an asset without any address. The address comes from the **transfer type mapping** in Siglet. For each participant context, the operator configures which endpoint stands behind a transfer type and which claims go into the token. For Costa's context, the transfer type `https://w3id.org/dspace-sig/profile/http-pull` leads to the supplier certificate service at `https://supplier-certificates.danube-cloud.example/api/v1`.
+
+In the usual setup, one mapping serves all API offers of a participant. Both of Costa's assets lead to the same endpoint, and the application tells them apart by the dataset ID in the token.
+
+A data plane must also be **registered** with the control plane, with its signaling endpoint and the transfer types it supports. The control plane uses the registration to list the available transfer types in the catalog and to select a data plane for a transfer. On a managed platform, the operator's provisioning registers Siglet for each new participant context. With your own connector you register your data plane yourself, with one call to the Management API.
+
+:::caution
+At the time of writing, the registration field for the supported transfer types has been renamed from `transferTypes` to `profiles`, in line with the specification. Demonstrators send both names during the transition.
+:::
+
+On a platform you therefore build two things: the endpoint with its API, and the check of the token on each call. Everything else comes from Siglet and the operator. If you run your own connector, it is yours as well.
+
+## Key takeaways
+
+- The connector is the control plane. It never serves data. A data plane does, on the connector's instruction.
+- For a pull, the provider's data plane creates the data address with endpoint and token, and both connectors pass it on.
+- A use-case application with Siglet in front is one shape of a data plane. SDKs exist for data planes that move data themselves.
+- The endpoint of your API is configured in the platform as a transfer type mapping, not in the asset.
+
+## Go deeper
+
+- [Data Plane Signaling specification](https://eclipse-dataplane-signaling.github.io/dataplane-signaling) defines the data flow state machine, the messages, and the registration.
+- [EDC documentation: Data plane](https://eclipse-edc.github.io/documentation/for-adopters/data-plane/) describes registration, signaling, and how the Signaling API is secured.
+- [Eclipse Dataplane Core](https://github.com/eclipse-dataplane-core) hosts Siglet and the data plane SDKs for Java, Go, and Rust.
+- [Set Up a Dataspace Platform: Data planes and use-case applications](../../platform-setup/10-data-planes-and-applications/) shows how an operator configures mappings and registration.

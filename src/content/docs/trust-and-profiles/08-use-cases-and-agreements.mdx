@@ -1,0 +1,93 @@
+---
+title: "Use cases and agreements"
+description: "How a dataspace organizes a use case: who owns it, which agreement its participants sign, how that agreement is used in a daily exchange, and how a new use case is added."
+---
+
+import Sequence from '../../../components/diagrams/Sequence.astro';
+
+Six months after the start, members ask for battery passport data as a second use case. The working group wants to add it without reopening the membership rules. Whether that works is a question of organization: who is responsible for a use case, and what its participants sign.
+
+:::note[In this lecture]
+- What a use case is, and who owns it.
+- The data sharing agreement, and how it is signed and versioned.
+- How the agreement is used in a daily exchange.
+- How a member joins a use case, and how a new use case is added.
+:::
+
+## A use case and its owner
+
+A **use case** is an agreed way for members to share one kind of data for one purpose. The [use-case path](../../use-case/08-a-second-use-case/) named its four parts. Somebody has to decide each of them.
+
+| Part | What has to be decided | For supplier certificates |
+|---|---|---|
+| Data | What is shared, in which form, and how it is requested | Company certificates such as ISO 9001 |
+| Conditions | What a company must prove to take part | Membership |
+| Terms | What participants promise each other, if anything beyond the conditions | The data sharing agreement for supplier certificates |
+| Applications | Which software can be used | Any application that follows the description of the data |
+
+The association appoints a **use-case owner**: a small group of the members that need the use case. The owner drafts all four parts and keeps them up to date. The association approves them.
+
+## The data sharing agreement
+
+Most use cases have a **data sharing agreement**. Its participants sign it, and it says what the dataspace cannot enforce by technical means: what the data may be used for, who may receive it, and how long it may be kept. The use-case owner maintains it, and the association approves it.
+
+A dataspace with members usually has a second, more general text. In the Bike Dataspace these are the participation terms. Every member signs them when it joins, and they cover membership itself: fees, conduct, liability, and how a membership ends. Keeping the two apart means that a frame supplier does not sign terms about battery data.
+
+Neither text is a requirement. A dataspace without membership has no participation terms. And a use case can do without an agreement of its own when a credential says all that a provider needs, such as recycler status. Most use cases share data whose use has to be agreed, and they have one.
+
+## Signatures and versions
+
+The association asks for three things with every agreement.
+
+- **A signed copy**, from a person who may sign for the company. Where that is not obvious, the applicant adds a power of attorney or an extract from the company register.
+- **A version.** Every agreement has a version number, and a published version never changes. A corrected sentence is a new version.
+- **A record.** The association keeps the signed copy with the version, the signer, and the date.
+
+When the owner publishes a new version, the association sets a date. Until then both versions count. Companies sign the new version, and each provider decides when it requires it.
+
+## The agreement in daily data sharing
+
+A company signs an agreement once. After that nobody sends a document around. The association confirms the signature in a credential: in the Bike Dataspace the membership credential lists every signed data sharing agreement with its version. A provider that wants only signatories puts that condition on its offer, as Costa does in [When things change](../../use-case/09-when-things-change/). Its connector then checks the credential at every request.
+
+<Sequence
+  actors={{ lc: 'Lindner connector', ls: 'Lindner Credential Service', cc: 'Costa connector' }}
+  steps={[
+    { from: 'lc', to: 'cc', label: 'Asks for a contract' },
+    { from: 'cc', to: 'ls', label: 'Asks for the credential' },
+    { from: 'ls', to: 'cc', label: 'Presents it' },
+    { at: 'cc', label: 'Finds the signed agreement and its version' },
+    { from: 'cc', to: 'lc', label: 'Contract' },
+  ]}
+  caption="The agreement in a daily exchange. Costa's connector reads from Lindner's credential that Lindner signed it. The association is not asked."
+/>
+
+The contract that both companies then hold names this condition. Together with the association's record of the signed copy, it shows later which text applied to the data that was shared.
+
+## Joining a use case, and adding one
+
+A company takes part in a use case when it meets its conditions and has signed its data sharing agreement, where there is one. In the Bike Dataspace it is also a member. It signs its first agreement when it applies, as [Onboarding](../05-onboarding/) describes, and sends a further one to the association later.
+
+Adding a use case to the dataspace follows the same path every time.
+
+| Step | Who acts |
+|---|---|
+| Describe the data, the conditions, and the agreement | The use-case owner |
+| Approve them, add the use case to the profile, and offer it in onboarding | The association, with operators that offer onboarding |
+| Sign the agreement | Each company that wants to take part |
+| Support the use case in software | Application providers, and members with their own software |
+
+Nothing in this list reopens the membership rules or rebuilds a platform. If a use case needs a fact that no credential states yet, such as recycler status, the working group adds that credential first.
+
+## Key takeaways
+
+- A use case has an owner: a group of the members that need it. The association approves what the owner defines.
+- The participants of a use case usually sign a data sharing agreement. A dataspace with membership adds general participation terms.
+- An agreement needs a signed copy from an authorized person, a version that never changes, and a record at the association.
+- A credential confirms what a company signed, so a provider's connector can check it at every request without asking anyone.
+
+## Go deeper
+
+- [IDSA Rulebook: Layers](https://kb.internationaldataspaces.org/external/rulebook/004_Layers/) places agreements and business rules next to the technical layer.
+- [IDSA Rulebook: Data sharing](https://kb.internationaldataspaces.org/external/rulebook/110_Data_sharing/) lists what sharing under agreed terms requires.
+- [A Dataspace Use Case: A second use case](../../use-case/08-a-second-use-case/) tells the battery data story from the participants' side.
+- [Build a Dataspace Application: Publish an offer](../../application/04-publish-an-offer/) shows how a use case turns into offers and contracts.

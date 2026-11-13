@@ -1,0 +1,246 @@
+/*
+ * Eclipse Dataspace Hub theme.
+ *
+ * Maps the brand kit onto Starlight's design tokens:
+ *   Ink #14121C · Paper #F6F5F2 · Violet #7B5CFF · Slate #5B5868 ·
+ *   Mist #B4B0C2 · Line #E2E0DA, set in Geist and Geist Mono.
+ * The last section styles the landing page (the page with a hero).
+ */
+
+/* ---------------------------------------------------------------------------
+   Type
+   ------------------------------------------------------------------------ */
+
+:root {
+  --sl-font: 'Geist Variable';
+  --sl-font-mono: 'Geist Mono Variable';
+  --hub-violet: #7b5cff;
+}
+
+/* ---------------------------------------------------------------------------
+   Colour: dark theme (Starlight's default scope)
+   ------------------------------------------------------------------------ */
+
+:root {
+  --sl-color-white: #f6f5f2; /* Paper */
+  --sl-color-gray-1: #e9e7ef;
+  --sl-color-gray-2: #c8c5d3;
+  --sl-color-gray-3: #9a96ab; /* between Mist and Slate, for secondary text */
+  --sl-color-gray-4: #5b5868; /* Slate */
+  --sl-color-gray-5: #2f2c3d;
+  --sl-color-gray-6: #1d1a28;
+  --sl-color-black: #14121c; /* Ink */
+
+  --sl-color-accent-low: #261c57;
+  --sl-color-accent: #7b5cff; /* Violet */
+  --sl-color-accent-high: #cfc5ff;
+}
+
+/* ---------------------------------------------------------------------------
+   Colour: light theme
+   ------------------------------------------------------------------------ */
+
+:root[data-theme='light'] {
+  --sl-color-white: #14121c; /* Ink */
+  --sl-color-gray-1: #211e2c;
+  --sl-color-gray-2: #343142;
+  --sl-color-gray-3: #5b5868; /* Slate */
+  --sl-color-gray-4: #8f8ba0;
+  --sl-color-gray-5: #e2e0da; /* Line */
+  --sl-color-gray-6: #eceae4;
+  --sl-color-gray-7: #ffffff;
+  --sl-color-black: #f6f5f2; /* Paper */
+
+  /* Violet darkened one step so link text meets contrast on Paper. */
+  --sl-color-accent-low: #e7e1ff;
+  --sl-color-accent: #5f3eeb;
+  --sl-color-accent-high: #2a1b7a;
+}
+
+/* Brand lockup in the header: keep it above its 120px minimum width. */
+.site-title img {
+  height: 2.6rem;
+  width: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   Landing page
+   ------------------------------------------------------------------------ */
+
+:root[data-has-hero] .hero {
+  padding-block: clamp(2.5rem, 6vw, 5rem) clamp(1.5rem, 4vw, 3rem);
+}
+
+:root[data-has-hero] .hero h1 {
+  font-size: clamp(2.3rem, 1.4rem + 3.4vw, 3.9rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+:root[data-has-hero] .hero .tagline {
+  max-width: 38rem;
+  color: var(--sl-color-gray-2);
+}
+
+/* The Orbit mark as hero art, with its clear space. */
+:root[data-has-hero] .hero > img,
+:root[data-has-hero] .hero > .hero-html {
+  width: min(70%, 20rem);
+  padding: 1rem;
+}
+
+/* Running text stays at a readable measure inside the wide landing column. */
+:root[data-has-hero] .sl-markdown-content > :is(p, blockquote, ul, ol) {
+  max-width: 46rem;
+}
+
+/* Section headings: generous spacing and a short violet rule. */
+:root[data-has-hero] .sl-markdown-content .sl-heading-wrapper.level-h2 {
+  margin-top: clamp(3rem, 6vw, 4.5rem);
+}
+
+:root[data-has-hero] .sl-markdown-content .sl-heading-wrapper.level-h2::before {
+  content: '';
+  display: block;
+  width: 2.75rem;
+  height: 0.2rem;
+  margin-bottom: 0.9rem;
+  border-radius: 999px;
+  background: var(--hub-violet);
+}
+
+:root[data-has-hero] .sl-markdown-content h2 {
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* "New to dataspaces?" pointer. */
+:root[data-has-hero] .sl-markdown-content > blockquote {
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-inline-start: 0.25rem solid var(--hub-violet);
+  border-radius: 0.4rem;
+  background: var(--sl-color-bg-nav);
+}
+
+/* ---------------------------------------------------------------------------
+   Diagrams (shared by the components in src/components/diagrams/)
+   ------------------------------------------------------------------------ */
+
+.hub-figure {
+  container-type: inline-size;
+  margin: 1.5rem 0;
+  padding: clamp(0.8rem, 2.5cqw, 1.15rem);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  background: var(--sl-color-bg-nav);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.hub-figure figcaption {
+  margin-top: 0.8rem;
+  color: var(--sl-color-gray-3);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+/* A box that stands for a component, a party, or a state. */
+.hub-node {
+  display: grid;
+  align-content: center;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--sl-color-gray-4);
+  border-radius: 0.4rem;
+  background: var(--sl-color-bg);
+}
+
+.hub-node strong {
+  color: var(--sl-color-white);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.hub-node span {
+  color: var(--sl-color-gray-2);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+/* Small uppercase label for lanes, layers, and stages. */
+.hub-label {
+  margin: 0;
+  color: var(--sl-color-gray-3);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+/* Arrow shaft with a head. Horizontal by default. */
+.hub-arrow {
+  position: relative;
+  display: block;
+  height: 2px;
+  min-width: 1.5rem;
+  border-radius: 1px;
+  background: var(--sl-color-accent);
+}
+
+.hub-arrow::after,
+.hub-arrow--both::before,
+.hub-arrow--back::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  border-block: 5px solid transparent;
+}
+
+.hub-arrow::after {
+  right: -1px;
+  border-inline-start: 7px solid var(--sl-color-accent);
+}
+
+.hub-arrow--both::before,
+.hub-arrow--back::before {
+  left: -1px;
+  border-inline-end: 7px solid var(--sl-color-accent);
+}
+
+.hub-arrow--back::after {
+  content: none;
+}
+
+/* Vertical variant, pointing down. */
+.hub-arrow--down {
+  width: 2px;
+  height: 1.1rem;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.hub-arrow--down::after {
+  top: auto;
+  right: auto;
+  bottom: -1px;
+  left: 50%;
+  translate: -50% 0;
+  border-block: 0;
+  border-inline: 5px solid transparent;
+  border-block-start: 7px solid var(--sl-color-accent);
+}
+
+.hub-arrow--down.hub-arrow--both::before {
+  top: -1px;
+  left: 50%;
+  translate: -50% 0;
+  border-block: 0;
+  border-inline: 5px solid transparent;
+  border-block-end: 7px solid var(--sl-color-accent);
+}

@@ -1,0 +1,126 @@
+---
+/**
+ * Work that happens in stages, some of it in parallel.
+ *
+ *   <Stages
+ *     stages={[
+ *       { label: 'First', nodes: ['jwtlet agent'] },
+ *       { label: 'Then, in parallel', nodes: ['Registration agent', 'EDC-V agent'] },
+ *       { label: 'Last', nodes: [{ title: 'Onboarding agent', text: 'waits for the others' }] },
+ *     ]}
+ *     caption="…"
+ *   />
+ *
+ * Stages run left to right and turn top to bottom on narrow screens.
+ */
+type Node = string | { title: string; text?: string };
+
+interface Stage {
+  label: string;
+  nodes: Node[];
+}
+
+interface Props {
+  stages: Stage[];
+  caption?: string;
+}
+
+const { stages, caption } = Astro.props;
+const node = (value: Node) => (typeof value === 'string' ? { title: value } : value);
+---
+
+<figure class="hub-figure not-content stages">
+  <ol role="list">
+    {
+      stages.map((stage, index) => (
+        <li>
+          {index > 0 && (
+            <span class="join" aria-hidden="true">
+              <span class="hub-arrow across" />
+              <span class="hub-arrow hub-arrow--down down" />
+            </span>
+          )}
+          <div class="stage">
+            <p class="hub-label">{stage.label}</p>
+            {stage.nodes.map((value) => {
+              const current = node(value);
+              return (
+                <div class="hub-node">
+                  <strong>{current.title}</strong>
+                  {current.text && <span>{current.text}</span>}
+                </div>
+              );
+            })}
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  ol {
+    display: flex;
+    align-items: stretch;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    flex: 1 1 0;
+    align-items: stretch;
+    min-width: 0;
+  }
+
+  .join {
+    display: grid;
+    align-content: center;
+    width: 1.9rem;
+    padding-inline: 0.3rem;
+    flex: none;
+  }
+
+  .stage {
+    display: grid;
+    flex: 1;
+    align-content: start;
+    gap: 0.4rem;
+    min-width: 0;
+    padding: 0.55rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.4rem;
+    background: color-mix(in srgb, var(--sl-color-bg) 60%, transparent);
+  }
+
+  .hub-label {
+    margin-bottom: 0.1rem;
+  }
+
+  .down {
+    display: none;
+  }
+
+  @container (max-width: 38rem) {
+    ol,
+    li {
+      flex-direction: column;
+    }
+
+    .join {
+      width: auto;
+      padding: 0.3rem 0;
+    }
+
+    .across {
+      display: none;
+    }
+
+    .down {
+      display: block;
+      margin-inline: 1.6rem 0;
+    }
+  }
+</style>

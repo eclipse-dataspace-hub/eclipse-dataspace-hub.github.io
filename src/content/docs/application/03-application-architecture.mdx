@@ -1,0 +1,100 @@
+---
+title: "Application architecture"
+description: "The control path and the data path of a use-case application, the parts it consists of, and the three layers at which a rule can be checked."
+---
+
+import Chain from '../../../components/diagrams/Chain.astro';
+
+Before the first endpoint exists, the team sketches the supplier certificate service on a whiteboard. Two questions decide most of the design. Which calls go to the connector, and which go to another company's application? And when a business rule has to hold, which component checks it?
+
+:::note[In this lecture]
+- The control path and the data path.
+- The parts of a use-case application.
+- Three layers of control, and which rule belongs to which.
+- What changes when one deployment serves many tenants.
+:::
+
+## Two paths
+
+A dataspace application talks in two directions.
+
+The **control path** runs through the connector. Your application calls the Management API of its participant context. The connector talks to the counterparty's connector with the Dataspace Protocol. Offers, agreements, and transfers are handled here. No business data travels on this path.
+
+The **data path** runs between the applications. Once a transfer is started, your application obtains the access token of that flow from Siglet and calls the counterparty's application directly. Requests and certificates travel on this path.
+
+<Chain
+  rows={[
+    {
+      label: 'Control path',
+      nodes: [
+        'Use-case application',
+        { title: 'Connector', text: 'your participant context' },
+        { title: 'Connector', text: 'the counterparty' },
+      ],
+      links: ['Management API', { label: 'Dataspace Protocol', both: true }],
+    },
+    {
+      label: 'Data path',
+      nodes: [
+        'Siglet',
+        'Use-case application',
+        { title: 'Use-case application', text: 'the counterparty' },
+      ],
+      links: ['access token', 'use-case API'],
+    },
+  ]}
+  caption="The control path creates agreements and flows. The data path carries the use case, protected by the token of a flow."
+/>
+
+A third connection brings news. The platform publishes an event when a negotiation or a transfer changes state, and your application consumes these events. Lecture 14 covers it.
+
+## The parts of a use-case application
+
+| Part | What it does | Lecture |
+|---|---|---|
+| **Connector client** | Publishes offers. Opens and maintains channels to counterparties. | 4 to 8 |
+| **Served API** | Answers the calls of other participants. Checks the token of each call. | 10 to 12 |
+| **Outbound client** | Calls the applications of counterparties over a channel. | 12 |
+| **Decision layer** | Decides what a caller gets, for example with partners, grants, and rules. | 12 |
+| **Store** | Keeps records, decisions, channels, and the event inbox. | 12, 14 |
+| **Event consumer** | Reacts to state changes from the platform. | 14 |
+| **Portal and integration API** | Lets staff and business systems use all of the above. | not covered |
+
+A channel is this path's name for one such connection. It is a pattern that lecture 8 introduces, not a term of the protocols. The connector client and the outbound client are the same for every use case. Write them once and keep them free of business rules. The served API and the decision layer are where one use case differs from the next.
+
+## Three layers of control
+
+A rule about who gets what can be checked at three levels. The trust path calls them facts, rules, and decisions. Each has a different owner and changes at a different speed.
+
+| Layer | Question it answers | Checked by | Changes |
+|---|---|---|---|
+| **Facts** | Is this a member? Has it signed the data sharing agreement? Is it a licensed recycler? | Credentials, issued by the association | When a fact about a company changes |
+| **Rules** | May this participant take part in this use case? | The policy of the offer, evaluated by the connector | Rarely, with the offer |
+| **Decisions** | May Lindner see this certificate? Is this request fulfilled automatically? | Your application | Daily, by the staff of a member |
+
+A rule belongs to the layer whose owner can answer it. Costa's connector cannot know which of Costa's certificates a customer may see, and the association should not have to issue a credential for it. If a rule mentions a single document, a single customer, or a decision that staff change during the day, it belongs in the application. Lecture 12 comes back to this split.
+
+## One tenant or many
+
+The supplier certificate service is **multi-tenant**. One deployment serves many members, and each member has its own context in the application, matched to its participant context in the connector. This has consequences throughout the design.
+
+- Every stored row belongs to exactly one tenant. Every query filters by it.
+- Every call to the platform is made for one tenant, with a token that was exchanged for that tenant's participant context.
+- Every inbound call is assigned to a tenant from the audience of its token, never from a parameter that the caller controls. Lecture 10 shows how.
+- When the platform sets up a new member, the application needs its own setup step for that member's context.
+
+Brandt's battery data service has one tenant. It consists of the same parts and skips the tenant selection.
+
+## Key takeaways
+
+- The control path goes through the connector and creates agreements and flows. The data path goes from application to application and carries the use case.
+- A use-case application consists of a connector client, a served API, an outbound client, a decision layer, a store, and an event consumer.
+- Facts are verified by credentials, rules are checked by the policy of an offer, and decisions are made by the application.
+- In a multi-tenant application, the tenant comes from the token and is part of every row and every call.
+
+## Go deeper
+
+- [EDC documentation: Control plane](https://eclipse-edc.github.io/documentation/for-adopters/control-plane/) describes the Management API and the entities behind the control path.
+- [EDC documentation: Data plane](https://eclipse-edc.github.io/documentation/for-adopters/data-plane/) describes the separation of concerns between connector and data plane.
+- [Design Trust, Credentials, and Dataspace Profiles: Beyond the policy](../../trust-and-profiles/09-beyond-the-policy/) looks at the three layers from the governance side.
+- [Set Up a Dataspace Platform: Data planes and use-case applications](../../platform-setup/10-data-planes-and-applications/) covers what a multi-tenant application needs from the platform.
